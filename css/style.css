@@ -208,6 +208,7 @@ h1 em, h2 em, h3 em, .brand-em {
   margin-bottom: 2.25rem;
 }
 .hero__cta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.hero__proof { margin-top: 1rem; font-size: var(--text-sm); color: var(--ink-soft); letter-spacing: 0.01em; }
 
 /* proof strip */
 .proof {
