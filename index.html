@@ -20,12 +20,12 @@
   <meta name="twitter:description" content="NYC bar and beverage consultant for hotels, restaurants, and bars. World's 50 Best #25, two-time Tales nominee. Programs that earn their keep — plus Neat AI." />
   <meta name="twitter:image" content="https://drinksbyneat.com/assets/images/og-image.jpg" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Inter:ital,wght@0,400..700;1,400..700&display=swap" />
+  <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/playfair-display-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
 
   <link rel="canonical" href="https://drinksbyneat.com/" />
   <script defer data-domain="drinksbyneat.com" src="https://plausible.io/js/script.js"></script>
+  <script defer src="/js/events.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" href="/assets/images/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/assets/images/favicon.ico" sizes="48x48" />
@@ -175,8 +175,8 @@
       <p class="hero__proof">World&rsquo;s 50 Best Bars #25 · two-time Tales of the Cocktail nominee</p>
       </div>
       <picture>
-        <source type="image/webp" srcset="/assets/images/hero-stir.webp" />
-        <img src="/assets/images/hero-stir.jpg" alt="Bartender stirring a cocktail in a crystal mixing glass" width="1600" height="995" fetchpriority="high" />
+        <source type="image/webp" srcset="/assets/images/hero-stir-800.webp 800w, /assets/images/hero-stir-1200.webp 1200w, /assets/images/hero-stir.webp 1600w" sizes="(max-width: 58rem) calc(100vw - 2.5rem), 30rem" />
+        <img src="/assets/images/hero-stir.jpg" alt="Bartender stirring a cocktail in a crystal mixing glass" width="1600" height="995" fetchpriority="high" decoding="async" />
       </picture>
       </div>
     </section>
@@ -496,7 +496,7 @@
           <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
         </div>
         <div>
-          <h4>Site</h4>
+          <h3>Site</h3>
           <ul>
             <li><a href="/work/">Work</a></li>
             <li><a href="/services/">Services</a></li>
@@ -508,7 +508,7 @@
           </ul>
         </div>
         <div>
-          <h4>Practice</h4>
+          <h3>Practice</h3>
           <ul>
             <li><a href="/beverage-consultant/">Beverage Consultant</a></li>
             <li><a href="/bar-consultant/">Bar Consultant</a></li>
@@ -522,7 +522,7 @@
           </ul>
         </div>
         <div>
-          <h4>Elsewhere</h4>
+          <h3>Elsewhere</h3>
           <ul>
             <li><a href="https://www.instagram.com/drinksbyneat/" target="_blank" rel="noopener">Instagram</a></li>
             <li><a href="https://www.linkedin.com/in/andreas-sanidiotis/" target="_blank" rel="noopener">LinkedIn</a></li>

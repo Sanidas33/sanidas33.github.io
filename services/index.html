@@ -18,11 +18,11 @@
   <meta name="twitter:title" content="NYC Bar Consulting — Openings, Menus &amp; Training | Drinks By Neat" />
   <meta name="twitter:description" content="Six fixed-scope bar consulting engagements for NYC hotels and restaurants: openings, refreshes, prep labs, RTDs, brand work, retainers. You know the cost first." />
   <meta name="twitter:image" content="https://drinksbyneat.com/assets/images/og-image.jpg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Inter:ital,wght@0,400..700;1,400..700&display=swap" />
+  <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/playfair-display-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="canonical" href="https://drinksbyneat.com/services/" />
   <script defer data-domain="drinksbyneat.com" src="https://plausible.io/js/script.js"></script>
+  <script defer src="/js/events.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" href="/assets/images/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/assets/images/favicon.ico" sizes="48x48" />
@@ -127,7 +127,7 @@
         <h2><em>Opening</em> Beverage Program</h2>
         <span class="duration">12 — 16 weeks pre-opening · + 12 weeks post-opening optimization</span>
         <p><strong>Who it&rsquo;s for.</strong> New hotel bars, hotel restaurant programs, and ground-up restaurant openings within six to twelve months of public launch. Best fit: concepts where the beverage program is a brand decision, not an operational afterthought. Hotel F&amp;B openings are also covered on <a class="text-link" href="/hotel-bar-consultant/">hotel bar consultant</a>; independent bar operations on <a class="text-link" href="/bar-consultant/">bar consultant</a>.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Beverage program concept and positioning, mapped to food, design, and brand voice</li>
           <li>Opening cocktail menu (20–30 drinks), wine and spirits curation, NA program</li>
@@ -137,7 +137,7 @@
           <li>Opening-week support — four nights on the floor, real-time corrections</li>
           <li>90-day post-opening optimization — menu review, costing pass, team check-in</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Equipment purchase — pass-through at cost, you buy direct from suppliers</li>
           <li>Liquor license consulting (referral on request)</li>
@@ -149,7 +149,7 @@
         <h2>Program <em>Refresh</em></h2>
         <span class="duration">6 — 10 weeks end-to-end</span>
         <p><strong>Who it&rsquo;s for.</strong> Existing venues with a beverage program that has gone stale, lost a head bartender, hired a new chef, or simply hasn&rsquo;t kept pace with the food&rsquo;s press cycle.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Two-week audit — tasting the current menu, reviewing pour costs, observing service across at least three shifts, interviewing the bar team and front-of-house</li>
           <li>New cocktail menu, 10–18 drinks, designed against the existing kitchen, ABV target, and price point</li>
@@ -157,7 +157,7 @@
           <li>Costing pass on every new drink with target pour costs</li>
           <li>Optional: signature-drink photography brief and naming workshop</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Prep-lab build — that&rsquo;s its own engagement</li>
           <li>New equipment beyond smallwares the new menu requires</li>
@@ -169,7 +169,7 @@
         <h2>Prep-Lab <em>Design &amp; Build</em></h2>
         <span class="duration">8 — 14 weeks, design through build supervision</span>
         <p><strong>Who it&rsquo;s for.</strong> Multi-unit restaurant groups (three or more outlets) and hotels with centralized commissary potential — currently solving central prep with bartenders in a corner of the kitchen at eleven at night. Dedicated landing: <a class="text-link" href="/prep-lab/">prep-lab design &amp; build</a>.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Site walkthrough and current-state assessment — equipment, workflows, throughput, food-safety posture</li>
           <li>Equipment specification — rotovap, centrifuge, sous-vide, ultrasonic homogenizer, Spinzall, vacuum sealer, walk-in batching, glycol chiller — sized to your throughput, not a brochure</li>
@@ -178,7 +178,7 @@
           <li>Two-day on-site team training on lab operation and safety</li>
           <li>30-day post-launch troubleshooting</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Equipment purchase — pass-through at supplier invoice</li>
           <li>General contracting or build-out — we work alongside your GC, not in place of them</li>
@@ -190,7 +190,7 @@
         <h2><em>White-Label</em> &amp; RTD Development</h2>
         <span class="duration">14 — 24 weeks, recipe through first production run</span>
         <p><strong>Who it&rsquo;s for.</strong> Hotels that want a branded bottled-cocktail line for minibar, room service, or lobby-bar service at scale. Restaurant groups that want a take-home product. Independent brands launching a bottled cocktail and needing recipe, sourcing, and co-packer access. Dedicated landing: <a class="text-link" href="/rtd-bottled-cocktails/">hotel bottled cocktail program / RTD cocktail consultant</a>. This is consulting to design the house line — not a product we sell you.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Recipe development, 3 – 6 SKUs</li>
           <li>Shelf-stability testing, ABV / serving-size targeting, label compliance review</li>
@@ -198,7 +198,7 @@
           <li>Label and brand-direction work in partnership with your design team</li>
           <li>Production planning and first-run supervision</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Co-packer fees, paid directly to the co-packer</li>
           <li>TTB / state liquor authority filings (referral)</li>
@@ -212,7 +212,7 @@
         <h2>Brand <em>Advocacy</em> &amp; Trade Education</h2>
         <span class="duration">Campaign, season, or annual program &middot; scoped per brand</span>
         <p><strong>Who it&rsquo;s for.</strong> Spirits and beverage brands that need credible advocacy in the on-trade — a voice bartenders actually listen to. Launches entering the U.S. market, established brands building bartender mindshare, and producers who want their liquid worked into serious cocktail programs rather than parked on a shelf. Current mandate: U.S. brand ambassador for Veda umami mushroom liqueur; past trade work includes Diplom&aacute;tico rum seminars across the Mediterranean.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Brand education curriculum — structured courses and masterclasses that teach the trade your liquid: production, flavor architecture, and where it wins in a build</li>
           <li>Bartender training programs — account-level trainings and academy-style sessions, designed to be rerun by your team</li>
@@ -221,7 +221,7 @@
           <li>Technique-led content for brand channels — recipes and education your marketing team can publish under a working bartender&rsquo;s name</li>
           <li>Market feedback from the floor — what bartenders say about your liquid when you&rsquo;re not in the room</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Paid media and influencer buys — we advise on trade credibility, we don&rsquo;t broker placements</li>
           <li>Distributor management and logistics — coordinated with your team, not run for them</li>
@@ -233,14 +233,14 @@
         <h2><em>Advisory</em> Retainer</h2>
         <span class="duration">Monthly · Six-month minimum</span>
         <p><strong>Who it&rsquo;s for.</strong> Restaurant groups and hotels with an internal beverage team that&rsquo;s competent but wants senior eyes on the program quarterly. Not a substitute for a full engagement — a check-in.</p>
-        <h4>What&rsquo;s included</h4>
+        <h3 class="detail-label">What&rsquo;s included</h3>
         <ul>
           <li>Monthly two-hour video call — menu review, hiring help, supplier conversations, problem-solving</li>
           <li>Quarterly on-site visit — full day, tasting and observation</li>
           <li>Slack / email access for fast questions</li>
           <li>One annual half-day program audit</li>
         </ul>
-        <h4>What&rsquo;s not included</h4>
+        <h3 class="detail-label">What&rsquo;s not included</h3>
         <ul>
           <li>Active menu development — that returns to the Refresh or Opening package</li>
           <li>Training — same</li>
@@ -296,7 +296,7 @@
           <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
         </div>
         <div>
-                    <h4>Site</h4>
+                    <h3>Site</h3>
           <ul>
             <li><a href="/work/">Work</a></li>
             <li><a href="/services/">Services</a></li>
@@ -308,7 +308,7 @@
           </ul>
         </div>
         <div>
-          <h4>Practice</h4>
+          <h3>Practice</h3>
           <ul>
             <li><a href="/beverage-consultant/">Beverage Consultant</a></li>
             <li><a href="/bar-consultant/">Bar Consultant</a></li>
@@ -322,7 +322,7 @@
           </ul>
         </div>
         <div>
-          <h4>Elsewhere</h4>
+          <h3>Elsewhere</h3>
           <ul>
             <li><a href="https://www.instagram.com/drinksbyneat/" target="_blank" rel="noopener">Instagram</a></li>
             <li><a href="https://www.linkedin.com/in/andreas-sanidiotis/" target="_blank" rel="noopener">LinkedIn</a></li>

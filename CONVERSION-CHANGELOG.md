@@ -59,3 +59,17 @@ Static GitHub Pages site (`sanidas33.github.io-main` / drinksbyneat.com). No fra
 - Sticky mobile CTA bar — no existing CSS support without a redesign.
 - Creating clean URL wrappers for the four legacy `*.html` blog posts — out of scope; kept URLs + canonicals.
 - Git commit / push / PR open — not requested for this pass.
+
+---
+
+# Post-launch QA + polish — 2026-09-30 (branch `polish/post-launch-qa`)
+
+Audit of all 67 live HTML pages (incl. SEO landings and `/work/{slug}/`) after PRs #1–#8. No redesign; Editorial 03 system kept. No edits to titles, meta descriptions, OG/Twitter, JSON-LD, canonicals, sitemap, robots, or llms.txt.
+
+- **Conversion tracking.** New `/js/events.js` (~1 KB, deferred, loaded after Plausible on every page) fires Plausible custom events `Book Call` (any `calendly.com/drinksbyneat/…` link) and `Email Click` (any `mailto:`), with a `position` prop (nav / hero / cta-band / inline / footer). **Action needed:** add both as Custom-event goals in Plausible.
+- **CTA at the end of every page.** Standard "Fifteen minutes usually answers it" band (Book a 15-minute call + Email instead) added to the 13 posts and 2 utility pages (404, privacy) that ended without one (the 4 legacy `*.html` post copies too, so they stay in sync).
+- **Blog hero images fixed.** On 16 recipe/technique posts the hero rendered 746 px tall at every width (the `height` attribute overrode the 21:10 crop), so on phones it was a full-screen tall crop. Added `height:auto`, and the 21:10 frame now holds.
+- **Images.** WebP (1200w + 800w) with `srcset`/`sizes` for every blog and case-study image, plus 800/1200/1600 for the home hero; JPEGs kept as fallback. Above-the-fold heroes are no longer lazy (they get `fetchpriority="high"`); below-the-fold images on `/work/` stay lazy. Added the missing `width`/`height` to case-study images.
+- **Fonts self-hosted.** Inter + Playfair Display (latin/latin-ext variable woff2) now load from `/assets/fonts/`, with the two above-the-fold faces preloaded. This drops the render-blocking Google Fonts request. Rendering is unchanged (before/after screenshots match pixel for pixel). Privacy policy updated to match.
+- **Accessibility.** Heading order fixed (footer column labels h4→h3; services and case-study labels h4→h3/h2 with identical styling). Fixed the low-contrast "Back to Notes" link on 3 older posts (accent → accent-deep). `aria-current` added on /approach/.
+- **Lighthouse (local, mobile):** home perf 83→99, FCP 3.4s→1.2s; all audited pages 99–100 perf, a11y 100.
