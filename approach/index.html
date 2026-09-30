@@ -18,11 +18,11 @@
   <meta name="twitter:title" content="Approach — How Drinks By Neat Works" />
   <meta name="twitter:description" content="How Drinks By Neat works: a call, a fixed-scope proposal, work built from the room, and a handoff the house can run. Beverage programs and Neat AI, same doctrine." />
   <meta name="twitter:image" content="https://drinksbyneat.com/assets/images/og-image.jpg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Inter:ital,wght@0,400..700;1,400..700&display=swap" />
+  <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/playfair-display-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="canonical" href="https://drinksbyneat.com/approach/" />
   <script defer data-domain="drinksbyneat.com" src="https://plausible.io/js/script.js"></script>
+  <script defer src="/js/events.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" href="/assets/images/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/assets/images/favicon.ico" sizes="48x48" />
@@ -83,7 +83,7 @@
         <a href="/services/">Services</a>
         <a href="/ai/">Neat AI</a>
         <a href="/notes/">Notes</a>
-        <a href="/about/">About</a>
+        <a href="/about/" aria-current="page">About</a>
         <a href="/contact/">Contact</a>
         <a class="btn btn--solid" href="https://calendly.com/drinksbyneat/15" target="_blank" rel="noopener">Book a 15-minute call</a>
       </nav>
@@ -175,7 +175,7 @@
           <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
         </div>
         <div>
-          <h4>Site</h4>
+          <h3>Site</h3>
           <ul>
             <li><a href="/work/">Work</a></li>
             <li><a href="/services/">Services</a></li>
@@ -187,7 +187,7 @@
           </ul>
         </div>
         <div>
-          <h4>Practice</h4>
+          <h3>Practice</h3>
           <ul>
             <li><a href="/beverage-consultant/">Beverage Consultant</a></li>
             <li><a href="/bar-consultant/">Bar Consultant</a></li>
@@ -201,7 +201,7 @@
           </ul>
         </div>
         <div>
-          <h4>Elsewhere</h4>
+          <h3>Elsewhere</h3>
           <ul>
             <li><a href="https://www.instagram.com/drinksbyneat/" target="_blank" rel="noopener">Instagram</a></li>
             <li><a href="https://www.linkedin.com/in/andreas-sanidiotis/" target="_blank" rel="noopener">LinkedIn</a></li>
