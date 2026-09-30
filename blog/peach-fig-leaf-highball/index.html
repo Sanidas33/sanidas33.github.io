@@ -18,11 +18,11 @@
   <meta name="twitter:title" content="The Peach &amp; Fig Leaf Highball: Batched, Carbonated, 15-Second Serve | Drinks By Neat" />
   <meta name="twitter:description" content="A draft-style summer highball: fig leaf gin, whole-fruit peach cordial, verjus, force-carbonated. Full spec — grams, targets, carbonation method, and the pour-cost math." />
   <meta name="twitter:image" content="https://drinksbyneat.com/assets/images/blog-peach-highball.jpg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Inter:ital,wght@0,400..700;1,400..700&display=swap" />
+  <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/playfair-display-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="canonical" href="https://drinksbyneat.com/blog/peach-fig-leaf-highball/" />
   <script defer data-domain="drinksbyneat.com" src="https://plausible.io/js/script.js"></script>
+  <script defer src="/js/events.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" href="/assets/images/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/assets/images/favicon.ico" sizes="48x48" />
@@ -73,7 +73,7 @@
         </p>
       </header>
       <div class="article-hero container" style="padding-top:0;">
-        <img class="article-img" src="/assets/images/blog-peach-highball.jpg" alt="Peach and fig leaf highball served without ice in a chilled glass, fine bubbles, peach crescent on the rim" width="1200" height="746"  loading="lazy" />
+        <picture><source type="image/webp" srcset="/assets/images/blog-peach-highball-800.webp 800w, /assets/images/blog-peach-highball.webp 1200w" sizes="(max-width: 40rem) calc(100vw - 2.5rem), 35rem" /><img class="article-img" src="/assets/images/blog-peach-highball.jpg" alt="Peach and fig leaf highball served without ice in a chilled glass, fine bubbles, peach crescent on the rim" width="1200" height="746" fetchpriority="high" decoding="async" /></picture>
       </div>
       <div class="article-body container">
 
@@ -200,7 +200,7 @@
           <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
         </div>
         <div>
-                    <h4>Site</h4>
+                    <h3>Site</h3>
           <ul>
             <li><a href="/work/">Work</a></li>
             <li><a href="/services/">Services</a></li>
@@ -212,7 +212,7 @@
           </ul>
         </div>
         <div>
-          <h4>Practice</h4>
+          <h3>Practice</h3>
           <ul>
             <li><a href="/beverage-consultant/">Beverage Consultant</a></li>
             <li><a href="/bar-consultant/">Bar Consultant</a></li>
@@ -226,7 +226,7 @@
           </ul>
         </div>
         <div>
-          <h4>Elsewhere</h4>
+          <h3>Elsewhere</h3>
           <ul>
             <li><a href="https://www.instagram.com/drinksbyneat/" target="_blank" rel="noopener">Instagram</a></li>
             <li><a href="https://www.linkedin.com/in/andreas-sanidiotis/" target="_blank" rel="noopener">LinkedIn</a></li>
