@@ -1,0 +1,184 @@
+/* /prompt-book/ — page-scoped styles (Editorial 03 tokens from /css/style.css) */
+
+.pb-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  padding-block: clamp(2.75rem, 7vw, 5.5rem) clamp(2.5rem, 6vw, 4.5rem);
+}
+.pb-hero h1 { font-size: var(--text-hero); max-width: 14ch; margin-bottom: 1.25rem; }
+.pb-lede { font-size: var(--text-lg); line-height: 1.6; color: var(--ink-soft); max-width: 36rem; margin-bottom: 2rem; }
+.pb-welcome {
+  display: inline-block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.pb-pillars {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 2rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 38rem;
+}
+.pb-pillars li { font-size: var(--text-sm); line-height: 1.55; color: var(--ink-soft); border-left: 2px solid var(--accent); padding-left: 0.85rem; }
+.pb-pillars span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+}
+.pb-cover { margin: 0; }
+.pb-cover img {
+  width: 100%;
+  height: auto;
+  max-width: 420px;
+  margin-inline: auto;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(17,17,17,.12), 0 18px 40px -12px rgba(17,17,17,.35);
+  transform: rotate(1.25deg);
+}
+
+/* --- Get the book ---------------------------------------------- */
+.pb-get {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+.pb-get__intro h2 { font-size: var(--text-2xl); margin-bottom: 1rem; }
+.pb-get__intro p { color: var(--ink-soft); margin-bottom: 1rem; max-width: 30rem; }
+.pb-small { font-size: var(--text-sm); color: var(--ink-soft); line-height: 1.55; }
+
+.pb-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--ink);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+.pb-form { display: grid; gap: 1.15rem; }
+.pb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; }
+.pb-field { display: grid; gap: 0.4rem; }
+.pb-field label { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+.pb-optional, .pb-req {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
+.pb-req { color: var(--accent-deep); }
+.pb-form input[type="text"],
+.pb-form input[type="email"],
+.pb-form input[type="tel"],
+.pb-form select {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;           /* >=16px keeps iOS from zooming */
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: 0.8rem 0.9rem;
+  min-height: 3rem;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.pb-form select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.8rem) 55%;
+  background-size: 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  padding-right: 2.25rem;
+}
+.pb-form select:invalid { color: #767676; }
+.pb-form input::placeholder { color: #8a8a8a; }
+.pb-form input:focus, .pb-form select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.pb-field.is-invalid input, .pb-field.is-invalid select { border-color: #A12622; }
+
+.pb-error { display: none; font-size: var(--text-xs); color: #A12622; font-weight: 500; }
+.pb-error.is-shown, .pb-field.is-invalid .pb-error { display: block; }
+
+.pb-check { display: grid; grid-template-columns: 1.25rem 1fr; gap: 0.75rem; align-items: start; }
+.pb-check input { width: 1.2rem; height: 1.2rem; margin-top: 0.2rem; accent-color: var(--accent-deep); }
+.pb-check label { font-size: var(--text-sm); line-height: 1.55; color: var(--ink-soft); }
+.pb-check.is-invalid label { color: #A12622; }
+
+/* honeypot: off-screen, not display:none (some bots skip hidden fields) */
+.pb-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+.pb-submit { justify-content: center; width: 100%; font-size: 1rem; padding-block: 1.1rem; border: 0; cursor: pointer; margin-top: 0.35rem; }
+.pb-submit[disabled] { opacity: .65; cursor: progress; }
+.pb-status { font-size: var(--text-sm); color: #A12622; min-height: 1px; }
+.pb-status:empty { display: none; }
+
+.pb-success h2 { font-size: var(--text-2xl); margin-bottom: 1rem; }
+.pb-success p { color: var(--ink-soft); margin-bottom: 1.25rem; }
+.pb-success strong { color: var(--ink); overflow-wrap: anywhere; }
+.pb-success:focus { outline: none; }
+.pb-download { justify-content: center; width: 100%; font-size: 1rem; padding-block: 1.1rem; margin-bottom: 0.6rem; }
+.pb-download[aria-disabled="true"] { opacity: .6; pointer-events: none; }
+.pb-next { border-top: 1px solid var(--rule); padding-top: 1.25rem; margin-top: 1.5rem; font-size: var(--text-sm); }
+
+/* --- Inside ------------------------------------------------------ */
+.pb-builds {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 clamp(2rem, 5vw, 4rem);
+  border-top: 1px solid var(--rule-strong);
+}
+.pb-builds li {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  column-gap: 0.5rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.pb-builds span { grid-row: span 2; font-family: var(--font-display); font-style: italic; font-size: 1.5rem; color: var(--accent-deep); line-height: 1.1; }
+.pb-builds strong { font-family: var(--font-display); font-weight: 500; font-size: 1.2rem; color: var(--ink); line-height: 1.3; }
+.pb-quote { margin: clamp(2.5rem, 6vw, 4rem) auto 0; max-width: 40rem; text-align: center; }
+.pb-quote p { font-family: var(--font-display); font-style: italic; font-size: var(--text-xl); line-height: 1.3; }
+.pb-quote cite { display: block; margin-top: 0.75rem; font-style: normal; font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.pb-back { text-align: center; margin-top: 2rem; }
+
+/* --- Privacy notice ---------------------------------------------- */
+.pb-legal { max-width: var(--prose); padding-bottom: clamp(3rem, 7vw, 5rem); }
+.pb-legal h2 { font-size: var(--text-lg); font-family: var(--font-display); margin: 2rem 0 0.5rem; }
+.pb-legal p, .pb-legal li { color: var(--ink-soft); }
+.pb-legal ul { padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+
+@media (max-width: 58rem) {
+  .pb-hero { grid-template-columns: 1fr; }
+  .pb-cover { order: -1; }
+  .pb-cover img { max-width: 180px; transform: none; margin-inline: 0; }
+  .pb-get { grid-template-columns: 1fr; }
+}
+@media (max-width: 36rem) {
+  .pb-pillars, .pb-builds, .pb-row { grid-template-columns: 1fr; }
+  .pb-hero { padding-top: 2rem; }
+}
+
+/* the hidden attribute must win over the display rules above */
+.pb-card [hidden], .pb-welcome[hidden] { display: none !important; }
+#get-the-book, #pbCard { scroll-margin-top: 5rem; }
+.section-head p.eyebrow, .page-hero p.eyebrow { font-size: 0.75rem; color: var(--accent-deep); letter-spacing: 0.16em; }
