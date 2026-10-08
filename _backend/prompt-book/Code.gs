@@ -2,9 +2,10 @@
  * Drinks by Neat — free-book lead capture (Google Apps Script web app).  v3
  *
  * Two books share this one script, one Google Sheet and one set of Script Properties:
- *   bartender (default)  /prompt-book/  "The Bartender's AI Prompt Book"      -> tab "Leads"
- *   bcb                  /bcb/          "Running a Spirits Brand with AI"     -> tab "BCB Leads"
+ *   bartender (default)  /prompt-book/  "The Bartender's AI Prompt Book"      -> tab "Bar Book"     (was "Leads")
+ *   bcb                  /bcb/          "Running a Spirits Brand with AI"     -> tab "Spirits Book" (was "BCB Leads")
  * A request without a `book` field is the bartender book, exactly as in v1.
+ * Old tab names are renamed in place (rows kept) the first time the script touches them.
  *
  * What it does
  *   POST  (JSON body, optional book)          -> validates the form, appends a row to that book's tab with a
@@ -65,7 +66,8 @@ var BOOKS = {
   bartender: {
     id: 'bartender',
     title: 'The Bartender\'s AI Prompt Book',
-    tab: 'Leads',
+    tab: 'Bar Book',
+    legacyTabs: ['Leads'],          // renamed in place to `tab` on first touch (rows kept)
     headers: HEADERS,
     pdfProp: 'PDF_FILE_ID',
     pdfNameContains: ['Prompt Book'],
@@ -80,7 +82,8 @@ var BOOKS = {
   bcb: {
     id: 'bcb',
     title: 'Running a Spirits Brand with AI',
-    tab: 'BCB Leads',
+    tab: 'Spirits Book',
+    legacyTabs: ['BCB Leads'],
     headers: BCB_HEADERS,
     pdfProp: 'BCB_PDF_FILE_ID',
     pdfNameContains: ['Spirits Brand', 'spirits-ai', 'Spirits'],
@@ -94,7 +97,7 @@ var BOOKS = {
   }
 };
 
-// v1 compatibility shim (some editor snippets used CONFIG.SHEET_TAB / CONFIG.ROLES).
+// v1 compatibility shim (some editor snippets used CONFIG.SHEET_TAB / CONFIG.ROLES). SHEET_TAB is the new name.
 CONFIG.SHEET_TAB = BOOKS.bartender.tab;
 CONFIG.ROLES = BOOKS.bartender.roles;
 CONFIG.DOWNLOAD_FILENAME = BOOKS.bartender.downloadFilename;
@@ -127,10 +130,11 @@ function setup() {
     ss = SpreadsheetApp.create(CONFIG.SPREADSHEET_TITLE);
     props.setProperty('SHEET_ID', ss.getId());
   }
-  // Bartender tab: v1 renamed the first sheet; keep doing that on a brand-new spreadsheet.
-  if (!ss.getSheetByName(BOOKS.bartender.tab)) {
+  // Bartender tab: v1 renamed the first sheet; keep doing that on a brand-new spreadsheet
+  // (only when neither the new nor an old bartender tab exists, and the first sheet is an empty non-book tab).
+  if (!tabFor_(ss, BOOKS.bartender)) {
     var first = ss.getSheets()[0];
-    if (first.getLastRow() === 0 && first.getName() !== BOOKS.bcb.tab) first.setName(BOOKS.bartender.tab);
+    if (first.getLastRow() === 0 && allTabNames_().indexOf(first.getName()) === -1) first.setName(BOOKS.bartender.tab);
   }
   Object.keys(BOOKS).forEach(function (k) {
     var added = [];
@@ -208,14 +212,21 @@ function selfTest() {
 
   try {
     var ss = SpreadsheetApp.openById(prop_('SHEET_ID'));
-    line(true, 'Leads sheet opens: ' + ss.getUrl());
+    line(true, 'Spreadsheet opens: ' + ss.getUrl());
     Object.keys(BOOKS).forEach(function (k) {
       var b = BOOKS[k];
       var sh = ss.getSheetByName(b.tab);
+      var old = legacyTab_(ss, b);
+      if (sh && old) line(true, 'Both "' + b.tab + '" and the old "' + old.getName() + '" exist. The script uses "' + b.tab +
+        '". Move any rows you need from "' + old.getName() + '" by hand, then delete it.');
+      if (!sh && old) {
+        line(true, 'Tab is still called "' + old.getName() + '". setup (or the next sign-up) renames it to "' + b.tab + '", keeping every row.');
+        sh = old;
+      }
       if (!sh) { line(false, 'Tab "' + b.tab + '" is missing. Run setup.'); return; }
       var have = sh.getLastColumn() ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String) : [];
       var missing = b.headers.filter(function (h) { return have.indexOf(h) === -1; });
-      line(!missing.length, 'Tab "' + b.tab + '" ' + (missing.length
+      line(!missing.length, 'Tab "' + sh.getName() + '" ' + (missing.length
         ? 'is missing columns ' + missing.join(', ') + '. Run setup (it adds them at the end; nothing moves).'
         : 'has all columns (' + Math.max(0, sh.getLastRow() - 1) + ' rows).'));
     });
@@ -258,7 +269,7 @@ function selfTest() {
  * first row (so no existing column ever moves). `added` (optional array) collects what was added.
  */
 function ensureTab_(ss, b, added) {
-  var sheet = ss.getSheetByName(b.tab);
+  var sheet = tabFor_(ss, b);              // renames an old-name tab instead of creating a duplicate
   if (!sheet) sheet = ss.insertSheet(b.tab);
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(b.headers);
@@ -267,7 +278,7 @@ function ensureTab_(ss, b, added) {
   } else {
     ensureHeaders_(sheet, b, added);
   }
-  delete HDR_CACHE_[b.tab];
+  delete HDR_CACHE_[sheet.getName()];
   return sheet;
 }
 
@@ -281,7 +292,7 @@ function ensureHeaders_(sheet, b, added) {
   }
   sheet.getRange(1, width + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
   if (added) Array.prototype.push.apply(added, missing);
-  delete HDR_CACHE_[b.tab];
+  delete HDR_CACHE_[sheet.getName()];
   return missing.length;
 }
 
@@ -367,13 +378,7 @@ function handleLead_(d) {
   };
 
   var sheet = sheet_(b);
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    sheet.appendRow(rowFor_(sheet, b, values).map(safeCell_));
-  } finally {
-    lock.releaseLock();
-  }
+  withLock_(function () { sheet.appendRow(rowFor_(sheet, b, values).map(safeCell_)); });
 
   var url = downloadUrl_(b, token);
   var result = sendBookEmail_(b, lead, url);
@@ -711,7 +716,7 @@ function findToken_(token, hint) {
   if (hint && h) order = [h.id].concat(order.filter(function (k) { return k !== h.id; }));
   for (var i = 0; i < order.length; i++) {
     var b = BOOKS[order[i]];
-    var sheet = ss.getSheetByName(b.tab);
+    var sheet = tabFor_(ss, b);
     if (!sheet || sheet.getLastRow() < 2) continue;
     var c = col_(sheet, b, 'download_token', true);
     if (!c) continue;
@@ -799,12 +804,10 @@ function deleteLeadsByEmailDetailed_(email) {
   var out = {};
   if (!email) return out;
   var ss = SpreadsheetApp.openById(prop_('SHEET_ID'));
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
+  withLock_(function () {
     Object.keys(BOOKS).forEach(function (k) {
       var b = BOOKS[k];
-      var sheet = ss.getSheetByName(b.tab);
+      var sheet = tabFor_(ss, b);
       out[b.tab] = 0;
       if (!sheet || sheet.getLastRow() < 2) return;
       var col = col_(sheet, b, 'email', true) || (b.headers.indexOf('email') + 1);
@@ -813,9 +816,7 @@ function deleteLeadsByEmailDetailed_(email) {
         if (String(values[i][0]).trim().toLowerCase() === email) { sheet.deleteRow(i + 1); out[b.tab]++; }
       }
     });
-  } finally {
-    lock.releaseLock();
-  }
+  });
   return out;
 }
 
@@ -847,20 +848,81 @@ var HDR_CHECKED_ = {};
 function sheet_(b) {
   b = b || BOOKS.bartender;
   var ss = SpreadsheetApp.openById(prop_('SHEET_ID'));
-  var sheet = ss.getSheetByName(b.tab);
+  var sheet = tabFor_(ss, b);
   if (sheet && sheet.getLastRow() > 0 && HDR_CHECKED_[b.tab]) return sheet;
   if (sheet && sheet.getLastRow() > 0) {
     var hdr = headerMap_(sheet);
     var missing = b.headers.some(function (h) { return !hdr.map[h]; });
     if (!missing) { HDR_CHECKED_[b.tab] = true; return sheet; }
   }
+  return withLock_(function () {
+    var s = ensureTab_(ss, b);
+    HDR_CHECKED_[b.tab] = true;
+    return s;
+  });
+}
+
+/**
+ * The book's tab under its current name, or null. If only an old-name tab exists (e.g. "Leads"), it is
+ * renamed in place under the script lock, keeping every row, so a duplicate empty tab is never created.
+ * If both exist, the new-name tab wins and a warning is logged once per execution.
+ */
+var TAB_WARNED_ = {};
+function tabFor_(ss, b) {
+  var sheet = ss.getSheetByName(b.tab);
+  if (sheet) {
+    var stale = legacyTab_(ss, b);
+    if (stale && !TAB_WARNED_[b.tab]) {
+      TAB_WARNED_[b.tab] = true;
+      var msg = 'Both "' + b.tab + '" and the old "' + stale.getName() + '" tab exist. Using "' + b.tab +
+        '". Move any rows you need from "' + stale.getName() + '" by hand, then delete it.';
+      console.warn(msg);
+      Logger.log('WARNING: ' + msg);
+    }
+    return sheet;
+  }
+  if (!legacyTab_(ss, b)) return null;
+  return withLock_(function () {
+    var now = ss.getSheetByName(b.tab);      // another request may have renamed it while we waited
+    if (now) return now;
+    var old = legacyTab_(ss, b);
+    if (!old) return null;
+    var oldName = old.getName();
+    old.setName(b.tab);
+    delete HDR_CACHE_[oldName];
+    delete HDR_CACHE_[b.tab];
+    Logger.log('Renamed tab "' + oldName + '" -> "' + b.tab + '" (all rows kept).');
+    return old;
+  });
+}
+
+function legacyTab_(ss, b) {
+  var names = b.legacyTabs || [];
+  for (var i = 0; i < names.length; i++) {
+    var t = ss.getSheetByName(names[i]);
+    if (t) return t;
+  }
+  return null;
+}
+
+/** Every current and old book tab name (so setup never renames one of them as "the first sheet"). */
+function allTabNames_() {
+  var out = [];
+  Object.keys(BOOKS).forEach(function (k) { out.push(BOOKS[k].tab); out = out.concat(BOOKS[k].legacyTabs || []); });
+  return out;
+}
+
+/** Runs fn under the script lock; re-entrant within one execution (nested calls don't wait on themselves). */
+var LOCK_DEPTH_ = 0;
+function withLock_(fn) {
+  if (LOCK_DEPTH_ > 0) return fn();
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  LOCK_DEPTH_++;
   try {
-    sheet = ensureTab_(ss, b);
-    HDR_CHECKED_[b.tab] = true;
-    return sheet;
+    return fn();
   } finally {
+    LOCK_DEPTH_--;
     lock.releaseLock();
   }
 }
@@ -882,9 +944,7 @@ function headerMap_(sheet) {
 function col_(sheet, b, header, readOnly) {
   var c = headerMap_(sheet).map[header];
   if (c || readOnly) return c || 0;
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try { ensureHeaders_(sheet, b); } finally { lock.releaseLock(); }
+  withLock_(function () { ensureHeaders_(sheet, b); });
   return headerMap_(sheet).map[header] || 0;
 }
 

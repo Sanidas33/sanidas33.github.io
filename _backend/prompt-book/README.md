@@ -5,8 +5,8 @@ running under **sani@drinksbyneat.com** (project **DBN Prompt Book Leads**), doe
 
 | Page | Book | `book` field sent | Sheet tab | PDF Script Property |
 |---|---|---|---|---|
-| `/prompt-book/` | The Bartender's AI Prompt Book | *(none — v1 default)* | `Leads` | `PDF_FILE_ID` |
-| `/bcb/` | Running a Spirits Brand with AI (BCB Berlin 2026) | `bcb` | `BCB Leads` | `BCB_PDF_FILE_ID` |
+| `/prompt-book/` | The Bartender's AI Prompt Book | *(none — v1 default)* | `Bar Book` (was `Leads`) | `PDF_FILE_ID` |
+| `/bcb/` | Running a Spirits Brand with AI (BCB Berlin 2026) | `bcb` | `Spirits Book` (was `BCB Leads`) | `BCB_PDF_FILE_ID` |
 
 For each submission it (v3):
 
@@ -34,7 +34,13 @@ depended on attaching the PDF, so no email went out at all.
 * Email order: PDF attached + link (`email_status` = `sent`) -> link only (`sent_link_only`) -> `failed` /
   `failed_quota` only if Gmail itself refuses (quota or error). Wording never says "attached" unless it is.
 * Alert to sani@drinksbyneat.com when the PDF can't be read or the email fails (never stops the sign-up).
-* `selfTest()` (editor): checks the sheet, columns, both PDFs and the mail quota. Read-only, sends nothing.
+* **Tabs renamed:** `Leads` -> `Bar Book`, `BCB Leads` -> `Spirits Book`. Nothing to do by hand: `setup()` (or the first
+  sign-up, export, delete or download link that touches a tab) renames the old tab **in place**, under the script lock,
+  so every row stays and no empty duplicate tab is created. If both an old and a new tab exist, the script uses the new
+  one, leaves the old one alone and logs a warning (selfTest shows it too); move any rows you need by hand, then delete
+  the old tab. Don't rename the tabs yourself to anything else: the script finds them by these names.
+* `selfTest()` (editor): checks the sheet, columns, both PDFs and the mail quota. Read-only, sends nothing (it reports
+  old tab names but doesn't rename them).
 * `setup()` no longer stops when a PDF is missing. It finishes everything else and logs exactly what to do.
 * `resendBookEmail('name@example.com', 'bcb')` (editor, on purpose only): fresh link + email to one person.
 * Download pages (`/bcb/download/`, `/prompt-book/download/`): noindex, not in the sitemap or `llms.txt`. They read
@@ -50,7 +56,8 @@ depended on attaching the PDF, so no email went out at all.
 
 1. Open the **DBN Prompt Book Leads** project at <https://script.google.com> as sani@drinksbyneat.com.
    Select all of `Code.gs`, paste the v3 file, **Save**.
-2. Run **setup** (function dropdown > setup > Run). Approve permissions if asked. Read the log: if it says
+2. Run **setup** (function dropdown > setup > Run). Approve permissions if asked. It renames the tabs to `Bar Book` /
+   `Spirits Book` (rows kept) and adds the two new columns. Read the log: if it says
    "SETUP NEEDS ONE MORE STEP", follow it (usually: add Script Property `BCB_PDF_FILE_ID` = the PDF's Drive file ID).
 3. Run **selfTest**. Every line should start with `OK`. It sends no email.
 4. **Deploy > Manage deployments** > select the **BCB** web app deployment (the `AKfycbylcd…` one) > pencil (Edit) >
@@ -64,8 +71,8 @@ depended on attaching the PDF, so no email went out at all.
 
 ## What changed in v2 (October 2026, for /bcb/)
 
-* `book: "bcb"` in the POST body -> `BCB Leads` tab (own headers, incl. `brand`), own roles list, own PDF, own email.
-  A POST **without** `book` behaves exactly like v1 (bartender, `Leads` tab, same email word for word).
+* `book: "bcb"` in the POST body -> `BCB Leads` tab (renamed `Spirits Book` in v3) (own headers, incl. `brand`), own roles list, own PDF, own email.
+  A POST **without** `book` behaves exactly like v1 (bartender, `Leads` tab — `Bar Book` since v3, same email word for word).
 * BCB email: subject "Your copy: Running a Spirits Brand with AI". The "book a 15-minute call" sentence is only
   included when the marketing opt-in is ticked; otherwise it ends "If you have questions, just reply."
 * `?action=pdf&t=…&part=N` returns the PDF in 192 KB chunks (`parts`, `bytes` in the reply). Without `part`
@@ -105,7 +112,7 @@ same Sheet and key.
 
 ## Day to day
 
-* **See leads:** open the Sheet. Bartenders are in `Leads`, BCB sign-ups in `BCB Leads`. One row per submission,
+* **See leads:** open the Sheet. Bartenders are in `Bar Book`, BCB (spirits) sign-ups in `Spirits Book`. One row per submission,
   with `src`, both consents, and their timestamps.
 * **Export CSV:** File > Download > CSV in the Sheet, or `<exec URL>?action=export&key=<EXPORT_KEY>` (bartender)
   / `…&book=bcb` (BCB). The key is in Project Settings > Script Properties.
