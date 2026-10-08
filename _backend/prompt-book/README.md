@@ -22,6 +22,37 @@ For each submission it (v3):
 
 No API keys, no DNS changes, no servers. The only credential is the one-time Google authorization.
 
+## Site change (8 Oct 2026): PDFs hosted on the site, instant download
+
+Downloading the PDF through Apps Script (a Drive read plus 6 chunks through Google's redirect) was too slow and
+sometimes never answered on iPhone. The site now serves the PDFs itself, at unlisted paths with a random segment:
+
+| Book | Static PDF |
+|---|---|
+| Spirits (BCB) | `/bcb/f/acd291522d35020d/Running-a-Spirits-Brand-with-AI-Drinks-by-Neat.pdf` |
+| Bartender | `/prompt-book/f/f95b855f6ce4d9d1/The-Bartenders-AI-Prompt-Book-Drinks-by-Neat.pdf` |
+
+Both files are byte-identical to the Drive copies (md5 `3f57bfaa…` / `c86094ad…`). They are not linked from any
+indexed page and aren't in `sitemap.xml` or `llms.txt`, and every link to them has `rel="nofollow"`. **They are
+unlisted, not private:** anyone who has the URL can open it, and that URL appears in the page source after
+sign-up. GitHub Pages can't send `X-Robots-Tag`, and `robots.txt` is left to the SEO owner.
+
+* **Form (`prompt-book.js`):** after client-side validation, the confirmation view ("Thanks, Mara. Your book is on
+  its way to …") appears at once, with the download button linked straight to the static PDF. On iPhone/iPad it's
+  "Open the PDF", which opens in a new tab (Safari's viewer, then Share > Save to Files). Elsewhere it's
+  "Download the PDF" with the `download` attribute. The POST goes **once** in the background (it saves the lead
+  and sends the email) and is never resent. If the form was filled faster than 2.7 s, the page waits out the rest
+  before sending (the backend's bot rule). Only a real "no" from the server (validation, rate limit) or a request
+  that failed fast or offline sends the visitor back to the form. The Plausible event (`BCB Book Download` /
+  `Prompt Book Download`) fires on the download-button tap.
+* **Email-link pages (`/bcb/download/`, `/prompt-book/download/`):** these immediately `location.replace()` to the
+  static PDF, with a visible "Open the PDF" fallback. The token in the link is no longer checked or counted (there's
+  no cheap endpoint for that), so the 30-day / 20-download limit no longer applies to the email link.
+* **Apps Script:** no change needed. The emails still link to `/…/download/?t=…`, which now forwards instantly.
+  `?action=pdf` still works but the site no longer uses it.
+* **Updating a book:** replace the file at the static path (same name), or add a new random folder and update
+  `data-pdf` in `bcb/index.html` / `prompt-book/index.html` and the URL in the two download pages.
+
 ## What changed in v3 (October 2026): the email link always goes out
 
 Why: a `/bcb/` sign-up saved the lead, but the PDF couldn't be read (`BCB_PDF_FILE_ID` missing), and in v2 the email

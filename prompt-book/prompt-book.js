@@ -1,134 +1,38 @@
-/* Free-book lead form, gated download, Plausible event. No dependencies.
+/* Free-book lead form + instant download. No dependencies.
    Used by /prompt-book/ (bartenders) and /bcb/ (spirits brands). Per-page settings live on the <form>:
-     data-endpoint        Apps Script /exec URL (empty = friendly "email Andreas" message; mock on localhost)
+     data-endpoint        Apps Script /exec URL (saves the lead, sends the email; empty = "email Andreas" message;
+                          mock on localhost)
+     data-pdf             the PDF on this site (unlisted path) — the download button links straight to it
      data-book            sent as `book` to the backend (omitted for the bartender book, as in v1)
-     data-event           Plausible event name            (default "Prompt Book Download")
+     data-event           Plausible event name, fired on the download-button tap (default "Prompt Book Download")
      data-submit-label    submit button text              (default "Get the free PDF")
-     data-filename        fallback download file name
+     data-filename        download file name
      data-src-key         sessionStorage key for ?src=    (default "pb_src")
    Optional fields (city, phone, brand) are only validated/sent when the form has them.
-   window.DBNBook.loadPdf(endpoint, token, book) is shared with the /…/download/ pages (email links). */
+   Flow: valid submit -> confirmation view + download button at once; the POST goes once in the background
+   (it saves the lead and sends the email with the link). It is never resent automatically. */
 (function () {
   'use strict';
-  /* ---------------------------------------------------------------- download
-     Apps Script answers every request with a 302 to a one-time script.googleusercontent.com/macros/echo
-     URL, and each PDF request has to read the file from Drive, which is sometimes slow (we have seen a
-     request take 11 s and end on an echo 404, and others not answer for 30 s+). So we:
-       1. ask for the PDF in 192 KB chunks (&part=0,1,…), part 0 first, then up to 3 chunks at a time
-          (a backend that predates chunking ignores `part` and returns the whole file, which still works),
-       2. never send cookies (credentials:'omit') and never reuse a cached echo response (cache:'no-store'),
-       3. give every request a hard timeout (20 s) and treat timeouts, HTML/404 pages and network errors as
-          retryable (2 retries with backoff), but never retry a real answer like {"error":"expired"},
-       4. stop the whole thing after 2 minutes, so a page can never sit on "Preparing" forever. */
-  var REQUEST_TIMEOUT_MS = 20000;
-  var TOTAL_TIMEOUT_MS = 120000;
-  var PARALLEL = 3;
-  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-  function retryable(msg) { var e = new Error(msg); e.retry = true; return e; }
-  function getJSON(url) {
-    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
-    var timer;
-    var timeout = new Promise(function (_, reject) {
-      timer = setTimeout(function () { if (ctl) ctl.abort(); reject(retryable('timeout')); }, REQUEST_TIMEOUT_MS);
-    });
-    var opts = { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'follow' };
-    if (ctl) opts.signal = ctl.signal;
-    var req = fetch(url, opts)
-      .then(function (r) {
-        if (!r.ok) throw retryable('http_' + r.status);
-        return r.text();
-      })
-      .then(function (t) {
-        try { return JSON.parse(t); } catch (err) { throw retryable('not_json'); }
-      }, function (err) { if (err && err.retry === undefined) err.retry = true; throw err; });
-    return Promise.race([req, timeout]).then(
-      function (v) { clearTimeout(timer); return v; },
-      function (err) { clearTimeout(timer); throw err; });
-  }
-  function withRetry(fn, delays) {
-    return fn().catch(function (err) {
-      if (!err || !err.retry || !delays.length) throw err;
-      return sleep(delays[0]).then(function () { return withRetry(fn, delays.slice(1)); });
-    });
-  }
-  /** loadPdf(endpoint, token, book, onProgress(done, total)) -> Promise<{ filename, blob }> */
-  function loadPdf(endpoint, token, book, onProgress) {
-    var base = endpoint + (endpoint.indexOf('?') > -1 ? '&' : '?') + 'action=pdf&t=' + encodeURIComponent(token) +
-      (book ? '&book=' + encodeURIComponent(book) : '');
-    var attempt = 0;
-    var progress = function (done, total) { try { if (onProgress) onProgress(done, total); } catch (err) {} };
-    var part = function (n) {
-      return withRetry(function () { attempt++; return getJSON(base + '&part=' + n + '&r=' + attempt); }, [1200, 2500])
-        .then(function (d) {
-          if (!d || !d.ok) { var e = new Error((d && d.error) || 'bad_response'); e.retry = false; throw e; }
-          if (d.parts && d.part !== n) throw new Error('bad_part');
-          return d;
-        });
-    };
-    var work = part(0).then(function (first) {
-      var total = first.parts || 1;          // no `parts` = backend sent the whole file
-      var chunks = [first.data];
-      var done = 1;
-      progress(done, total);
-      var next = 1;
-      function worker() {
-        if (next >= total) return Promise.resolve();
-        var n = next++;
-        return part(n).then(function (d) { chunks[n] = d.data; done++; progress(done, total); return worker(); });
-      }
-      var pool = [];
-      for (var w = 0; w < Math.min(PARALLEL, total - 1); w++) pool.push(worker());
-      return Promise.all(pool).then(function () {
-        var arrays = chunks.map(function (b64) {
-          var bin = atob(b64);
-          var bytes = new Uint8Array(bin.length);
-          for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-          return bytes;
-        });
-        if (first.bytes && arrays.reduce(function (s, a) { return s + a.length; }, 0) !== first.bytes) throw new Error('size_mismatch');
-        return { filename: first.filename, blob: new Blob(arrays, { type: 'application/pdf' }) };
-      });
-    });
-    var overall;
-    var guard = new Promise(function (_, reject) { overall = setTimeout(function () { reject(new Error('timeout')); }, TOTAL_TIMEOUT_MS); });
-    return Promise.race([work, guard]).then(
-      function (v) { clearTimeout(overall); return v; },
-      function (err) { clearTimeout(overall); throw err; });
-  }
-
-  /* iPhone/iPad (every iOS browser and in-app browser is WebKit). There, a scripted click on a blob
-     download is unreliable, so we never auto-download: the visitor taps a button, and we open the PDF in
-     Safari's viewer (Share > Save to Files), with the share sheet as a second option. */
+  /* iPhone/iPad (every iOS browser and in-app browser is WebKit): a plain link that opens the PDF in a new
+     tab (Safari's viewer, then Share > Save to Files). Elsewhere: same link with the download attribute. */
   var IOS = /iP(hone|ad|od)/.test(navigator.userAgent || '') ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-  /** Turns an <a> into the right "save" button for this device. Returns the label it set. */
-  function armButton(a, blob, filename) {
-    var url = URL.createObjectURL(blob);
+  function armLink(a, url, filename) {
     a.href = url;
+    a.setAttribute('rel', 'nofollow');
     a.removeAttribute('aria-disabled');
     a.hidden = false;
     if (IOS) {
       a.removeAttribute('download');
-      a.setAttribute('target', '_blank');   // no rel=noopener: the new tab must be able to read our blob: URL
+      a.setAttribute('target', '_blank');
       a.textContent = 'Open the PDF';
     } else {
       a.setAttribute('download', filename);
       a.removeAttribute('target');
       a.textContent = 'Download the PDF';
     }
-    return a.textContent;
   }
-
-  /** Native share sheet with the file (iOS: "Save to Files"), when the browser supports it. */
-  function canShareFile(blob, filename) {
-    try {
-      var f = new File([blob], filename, { type: 'application/pdf' });
-      return !!(navigator.canShare && navigator.share && navigator.canShare({ files: [f] })) ? f : null;
-    } catch (err) { return null; }
-  }
-
-  window.DBNBook = { loadPdf: loadPdf, armButton: armButton, canShareFile: canShareFile, isIOS: IOS };
+  window.DBNBook = { armLink: armLink, isIOS: IOS };
 })();
 
 (function () {
@@ -145,11 +49,11 @@
   var FILENAME = cfg('filename', 'The-Bartenders-AI-Prompt-Book.pdf');
   var SRC_KEY = cfg('src-key', 'pb_src');
   var startedAt = Date.now();
+  var PDF_URL = cfg('pdf', '');      // static, unlisted PDF on this site (opens instantly)
   var POST_TIMEOUT_MS = 25000;
+  var MIN_FILL_MS = 2700;            // backend treats < 2500 ms as a bot; small margin
   var emailLineEl = document.getElementById('pbEmailLine');
-  var EMAIL_LINE_HTML = emailLineEl ? emailLineEl.innerHTML : '';
   var noteEl = document.getElementById('pbDownloadNote');
-  if (noteEl) noteEl.setAttribute('data-default', noteEl.textContent);
   var submitBtn = document.getElementById('pbSubmit');
   var statusEl = document.getElementById('pbStatus');
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -207,8 +111,59 @@
     submitBtn.textContent = SUBMIT_LABEL;
   }
 
+  var successEl = document.getElementById('pbSuccess');
+  var firstEl = document.getElementById('pbFirst');
+  var btn = document.getElementById('pbDownload');
+  var NOTE_DEFAULT = noteEl ? noteEl.textContent : '';
+  var inFlight = false;
+
+  // Plausible conversion: the tap on the download button (once per page view).
+  var tracked = false;
+  btn.addEventListener('click', function () {
+    if (btn.getAttribute('aria-disabled') === 'true') return;
+    if (tracked) return;
+    tracked = true;
+    try { window.plausible(EVENT, { props: { src: src || 'direct' } }); } catch (err) {}
+  });
+
+  function setEmailLine(first, email) {
+    // "Thanks, Mara. Your book is on its way to <strong>mara@…</strong>. Check your inbox (and Promotions or spam)."
+    emailLineEl.textContent = '';
+    emailLineEl.appendChild(document.createTextNode('Thanks' + (first ? ', ' + first : '') + '. Your book is on its way to '));
+    var strong = document.createElement('strong'); strong.id = 'pbEmail'; strong.textContent = email;
+    emailLineEl.appendChild(strong);
+    emailLineEl.appendChild(document.createTextNode('. Check your inbox (and Promotions or spam).'));
+  }
+
+  /** Confirmation view with the download button, shown the moment a valid form is submitted. */
+  function showConfirmation(payload) {
+    var first = (payload.name.split(/\s+/)[0] || '').slice(0, 40);
+    firstEl.textContent = first ? ', ' + first : '';
+    setEmailLine(first, payload.email);
+    if (PDF_URL) {
+      window.DBNBook.armLink(btn, PDF_URL, FILENAME);
+      noteEl.textContent = window.DBNBook.isIOS ? NOTE_DEFAULT + ' · opens in a new tab, then Share > Save to Files' : NOTE_DEFAULT;
+    } else {
+      btn.hidden = true;
+      noteEl.textContent = 'Your download link is in the email.';
+    }
+    form.hidden = true;
+    successEl.hidden = false;
+    try { successEl.focus({ preventScroll: true }); } catch (err) {}
+    document.getElementById('pbCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Back to the form (server said no, or the request never left the phone). The visitor decides to resend. */
+  function backToForm(msg) {
+    successEl.hidden = true;
+    form.hidden = false;
+    fail(msg);
+    document.getElementById('pbCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (inFlight) return;
     statusEl.textContent = '';
     var bad = validate();
     if (bad) { bad.focus(); return; }
@@ -228,28 +183,30 @@
     payload.consent_book = form.elements.consent_book.checked;
     payload.marketing_opt_in = has('marketing_opt_in') ? form.elements.marketing_opt_in.checked : false;
     payload.website = form.elements.website.value;   // honeypot
-    payload.elapsed_ms = Date.now() - startedAt;
     payload.page = location.pathname + location.search;
     payload.user_agent = navigator.userAgent;
     if (BOOK) payload.book = BOOK;
 
+    inFlight = true;
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending…';
+    showConfirmation(payload);                 // instant; the request goes in the background
 
-    // text/plain body = "simple" CORS request: no preflight, which Apps Script can't answer.
-    // The POST is sent exactly once and never retried (a retry would mean a second email). Apps Script can be
-    // slow to answer, and on iPhone the answer sometimes never reaches the page even though the sign-up and
-    // email went through. So: after 25 s, or if the answer is unreadable, show "your details are in, check
-    // your inbox" instead of leaving the button on "Sending…". A late answer still upgrades the page.
-    var settled = false;      // a final state (success, soft success, or error) is on screen
-    var softShown = false;    // the "check your inbox" state is on screen
+    // Spam rule: the backend ignores forms filled faster than MIN_FILL_MS. A quick human still sees the
+    // confirmation at once; we just wait out the remainder before sending.
+    var wait = Math.max(0, MIN_FILL_MS - (Date.now() - startedAt));
+    setTimeout(function () { send(payload); }, wait);
+  });
+
+  /* The POST is sent exactly once and never retried (a retry would mean a second email). It saves the lead
+     and sends the email; the page only reacts to a real "no" (validation, rate limit) or a request that never
+     left the phone. A slow, missing or unreadable answer changes nothing: the button already works.
+     text/plain body = "simple" CORS request: no preflight, which Apps Script can't answer. */
+  function send(payload) {
+    payload.elapsed_ms = Date.now() - startedAt;
+    var settled = false;
     var sentAt = Date.now();
-    var slowTimer = setTimeout(function () {
-      if (!settled) { statusEl.textContent = 'Still sending. This can take up to 20 seconds.'; statusEl.classList.add('is-info'); }
-    }, 8000);
-    var softTimer = setTimeout(function () { if (!settled) soft(); }, POST_TIMEOUT_MS);
-    function finish() { settled = true; clearTimeout(slowTimer); clearTimeout(softTimer); }
-    function soft() { finish(); softShown = true; showPending(payload); }
+    var timer = setTimeout(function () { settled = true; }, POST_TIMEOUT_MS);   // later answers can't undo the view
 
     fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow', credentials: 'omit' })
       .then(function (r) {
@@ -258,95 +215,38 @@
         });
       })
       .then(function (res) {
-        if (res && res.ok) { finish(); return showSuccess(payload, res); }   // also upgrades a soft state
-        if (softShown) return;                                                 // keep "check your inbox"
-        if (res && res.error === 'validation' && res.fields) {
-          finish();
-          Object.keys(res.fields).forEach(function (n) { if (form.elements[n]) setInvalid(n, true); });
-          return fail('Please check the highlighted fields.');
+        var late = settled;
+        settled = true;
+        clearTimeout(timer);
+        if (res && res.ok) {
+          if (res.emailed === false) {
+            var first = (res.firstName || payload.name.split(/\s+/)[0] || '').slice(0, 40);
+            emailLineEl.textContent = 'Thanks' + (first ? ', ' + first : '') + '. We saved your details, but the email didn’t go out this time. ' +
+              'Use the button below, or email sani@drinksbyneat.com.';
+          }
+          return;
         }
-        if (res && res.error === 'rate_limited') { finish(); return fail('You’ve already requested the book a few times — check your inbox, or try again in 10 minutes.'); }
-        // Server error or an unreadable answer: the request reached Google, so the sign-up probably went
-        // through. Don't invite a resubmit; point to the inbox.
-        soft();
+        if (late) return;
+        if (res && res.error === 'validation' && res.fields) {
+          inFlight = false;
+          Object.keys(res.fields).forEach(function (n) { if (form.elements[n]) setInvalid(n, true); });
+          return backToForm('Please check the highlighted fields.');
+        }
+        if (res && res.error === 'rate_limited') {
+          inFlight = false;
+          return backToForm('You’ve already requested the book a few times. Check your inbox, or try again in 10 minutes.');
+        }
+        // Server error or unreadable answer: the request reached Google, so the sign-up probably went through.
       })
       .catch(function () {
         if (settled) return;
-        // Failed fast while offline = it never left the phone: safe to let them try again.
-        if ((navigator.onLine === false) || Date.now() - sentAt < 1500) {
-          finish();
-          return fail('Couldn’t reach the server. Check your connection and try again.');
+        settled = true;
+        clearTimeout(timer);
+        // Failed fast or offline = it never left the phone: let them try again.
+        if (navigator.onLine === false || Date.now() - sentAt < 1500) {
+          inFlight = false;
+          backToForm('Couldn’t reach the server. Check your connection and try again.');
         }
-        soft();
-      });
-  });
-
-  /** Sign-up sent, but no readable answer: most likely saved and emailed. Never resubmits. */
-  function showPending(payload) {
-    trackOnce();
-    var first = (payload.name.split(/\s+/)[0] || '').slice(0, 40);
-    document.getElementById('pbFirst').textContent = first ? ', ' + first : '';
-    document.getElementById('pbEmailLine').textContent = 'Thanks, your details are in. Check your inbox at ' + payload.email +
-      ' for the email with your download link (and Promotions or spam). If nothing arrives in a few minutes, email sani@drinksbyneat.com.';
-    form.hidden = true;
-    var success = document.getElementById('pbSuccess');
-    success.hidden = false;
-    try { success.focus({ preventScroll: true }); } catch (err) {}
-    document.getElementById('pbCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.getElementById('pbDownload').hidden = true;
-    document.getElementById('pbDownloadNote').textContent = '';
-  }
-
-  var tracked = false;
-  function trackOnce() {
-    if (tracked) return;
-    tracked = true;
-    try { window.plausible(EVENT, { props: { src: src || 'direct' } }); } catch (err) {}
-  }
-
-  function showSuccess(payload, res) {
-    trackOnce();
-
-    var first = (res.firstName || payload.name.split(/\s+/)[0] || '').slice(0, 40);
-    document.getElementById('pbFirst').textContent = first ? ', ' + first : '';
-    if (emailLineEl && !document.getElementById('pbEmail')) emailLineEl.innerHTML = EMAIL_LINE_HTML;   // after a soft state
-    document.getElementById('pbEmail').textContent = payload.email;
-    if (res.emailed === false) {
-      document.getElementById('pbEmailLine').textContent = 'We saved your details. Grab your download below. If no email arrives in a few minutes, email sani@drinksbyneat.com.';
-    }
-    form.hidden = true;
-    var success = document.getElementById('pbSuccess');
-    success.hidden = false;
-    success.focus({ preventScroll: true });
-    document.getElementById('pbCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    var btn = document.getElementById('pbDownload');
-    var note = document.getElementById('pbDownloadNote');
-    btn.hidden = false;                      // a late answer after the "check your inbox" state
-    btn.setAttribute('aria-disabled', 'true');
-    btn.textContent = 'Preparing your PDF…';
-    var noteDefault = note.getAttribute('data-default') || '';
-    note.textContent = noteDefault;
-    if (!res.token) { // honeypot/spam path or no token issued
-      btn.hidden = true;
-      note.textContent = 'Your copy is on its way by email.';
-      return;
-    }
-    // Fetch the PDF now so the button tap is an instant, same-gesture download (or "Open the PDF" on iPhone).
-    window.DBNBook.loadPdf(ENDPOINT, res.token, BOOK, function (done, total) {
-      if (total > 1 && done < total) btn.textContent = 'Preparing your PDF… ' + done + ' of ' + total;
-    })
-      .then(function (d) {
-        window.DBNBook.armButton(btn, d.blob, d.filename || FILENAME);
-        note.textContent = window.DBNBook.isIOS ? noteDefault + ' · opens in a new tab, then Share > Save to Files' : noteDefault;
-      })
-      .catch(function () {
-        btn.hidden = true;
-        note.textContent = res.emailed === false
-          ? 'We saved your details. If no email arrives in a few minutes, email sani@drinksbyneat.com.'
-          : res.linkEmailed
-            ? 'The instant download didn’t load. Your download link is in your inbox too. Check Promotions or spam if it hides.'
-            : 'Got it. Your copy is on its way to your inbox. If it hasn’t arrived in five minutes, email sani@drinksbyneat.com.';
       });
   }
 })();
