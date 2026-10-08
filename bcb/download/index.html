@@ -7,19 +7,9 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
   <script>
-    /* Personal link from the book email: save the token for this tab, then take it out of the address bar
-       before analytics loads, so it isn't recorded or shared by accident. */
-    (function () {
-      try {
-        var t = new URLSearchParams(location.search).get('t');
-        if (t) {
-          window.__dbnToken = t;
-          sessionStorage.setItem('dl_t_bcb', t);
-          // strip only once it's saved, so a reload of the bare URL still finds it
-          if (sessionStorage.getItem('dl_t_bcb') === t) history.replaceState(null, '', location.pathname);
-        }
-      } catch (e) {}
-    })();
+    /* Personal link from the book email (/…/download/?t=…): go straight to the PDF on this site.
+       The visible link below is the fallback if the redirect is blocked. */
+    (function () { try { location.replace('/bcb/f/acd291522d35020d/Running-a-Spirits-Brand-with-AI-Drinks-by-Neat.pdf'); } catch (e) {} })();
   </script>
   <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/playfair-display-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -42,17 +32,11 @@
 
   <main>
     <section class="section--tight container pb-dl">
-      <div class="pb-card" id="dlApp"
-           data-endpoint="https://script.google.com/macros/s/AKfycbylcdFhPNTZ1GbwJAWtBhPU5spp9t_EAzaf9emx8SPoEIhN-9-nwbOcNPhHN_mZrCa4/exec"
-           data-book="bcb"
-           data-filename="Running-a-Spirits-Brand-with-AI-Drinks-by-Neat.pdf"
-           data-event="Book Link Download">
+      <div class="pb-card" id="dlApp">
         <p class="eyebrow">Your copy</p>
         <h1>Running a Spirits Brand <em>with AI.</em></h1>
-        <p class="pb-dl__status" id="dlStatus" role="status" aria-live="polite">Getting your copy ready. This can take up to a minute.</p>
-        <a class="btn btn--solid pb-download" id="dlButton" href="#" aria-disabled="true">Preparing your PDF…</a>
-        <button class="btn btn--outline pb-download" id="dlShare" type="button" hidden>Save or share</button>
-        <button class="btn btn--outline pb-download" id="dlRetry" type="button" hidden>Try again</button>
+        <p class="pb-dl__status" id="dlStatus" role="status" aria-live="polite">Opening your copy. If it doesn’t open by itself, use the button.</p>
+        <a class="btn btn--solid pb-download" id="dlButton" href="/bcb/f/acd291522d35020d/Running-a-Spirits-Brand-with-AI-Drinks-by-Neat.pdf" rel="nofollow" target="_self">Open the PDF</a>
         <p class="pb-small">PDF · 18 pages · 1 MB</p>
         <p class="pb-small pb-dl__help">Trouble downloading? Email <a class="text-link" href="mailto:sani@drinksbyneat.com">sani@drinksbyneat.com</a> and Andreas will send you a copy.</p>
       </div>
@@ -67,7 +51,5 @@
       </div>
     </div>
   </footer>
-  <script src="/prompt-book/prompt-book.js?v=20261008c" defer></script>
-  <script src="/prompt-book/download.js?v=20261008c" defer></script>
 </body>
 </html>
