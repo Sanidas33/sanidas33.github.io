@@ -145,6 +145,11 @@
   var FILENAME = cfg('filename', 'The-Bartenders-AI-Prompt-Book.pdf');
   var SRC_KEY = cfg('src-key', 'pb_src');
   var startedAt = Date.now();
+  var POST_TIMEOUT_MS = 25000;
+  var emailLineEl = document.getElementById('pbEmailLine');
+  var EMAIL_LINE_HTML = emailLineEl ? emailLineEl.innerHTML : '';
+  var noteEl = document.getElementById('pbDownloadNote');
+  if (noteEl) noteEl.setAttribute('data-default', noteEl.textContent);
   var submitBtn = document.getElementById('pbSubmit');
   var statusEl = document.getElementById('pbStatus');
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -232,25 +237,79 @@
     submitBtn.textContent = 'Sending…';
 
     // text/plain body = "simple" CORS request: no preflight, which Apps Script can't answer.
+    // The POST is sent exactly once and never retried (a retry would mean a second email). Apps Script can be
+    // slow to answer, and on iPhone the answer sometimes never reaches the page even though the sign-up and
+    // email went through. So: after 25 s, or if the answer is unreadable, show "your details are in, check
+    // your inbox" instead of leaving the button on "Sending…". A late answer still upgrades the page.
+    var settled = false;      // a final state (success, soft success, or error) is on screen
+    var softShown = false;    // the "check your inbox" state is on screen
+    var sentAt = Date.now();
+    var slowTimer = setTimeout(function () {
+      if (!settled) { statusEl.textContent = 'Still sending. This can take up to 20 seconds.'; statusEl.classList.add('is-info'); }
+    }, 8000);
+    var softTimer = setTimeout(function () { if (!settled) soft(); }, POST_TIMEOUT_MS);
+    function finish() { settled = true; clearTimeout(slowTimer); clearTimeout(softTimer); }
+    function soft() { finish(); softShown = true; showPending(payload); }
+
     fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow', credentials: 'omit' })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        return r.text().then(function (t) {
+          try { return JSON.parse(t); } catch (err) { return { ok: false, error: 'unreadable' }; }
+        });
+      })
       .then(function (res) {
-        if (res && res.ok) return showSuccess(payload, res);
+        if (res && res.ok) { finish(); return showSuccess(payload, res); }   // also upgrades a soft state
+        if (softShown) return;                                                 // keep "check your inbox"
         if (res && res.error === 'validation' && res.fields) {
+          finish();
           Object.keys(res.fields).forEach(function (n) { if (form.elements[n]) setInvalid(n, true); });
           return fail('Please check the highlighted fields.');
         }
-        if (res && res.error === 'rate_limited') return fail('You’ve already requested the book a few times — check your inbox, or try again in 10 minutes.');
-        fail('Something went wrong on our side. Try again, or email sani@drinksbyneat.com.');
+        if (res && res.error === 'rate_limited') { finish(); return fail('You’ve already requested the book a few times — check your inbox, or try again in 10 minutes.'); }
+        // Server error or an unreadable answer: the request reached Google, so the sign-up probably went
+        // through. Don't invite a resubmit; point to the inbox.
+        soft();
       })
-      .catch(function () { fail('Couldn’t reach the server. Check your connection and try again.'); });
+      .catch(function () {
+        if (settled) return;
+        // Failed fast while offline = it never left the phone: safe to let them try again.
+        if ((navigator.onLine === false) || Date.now() - sentAt < 1500) {
+          finish();
+          return fail('Couldn’t reach the server. Check your connection and try again.');
+        }
+        soft();
+      });
   });
 
-  function showSuccess(payload, res) {
+  /** Sign-up sent, but no readable answer: most likely saved and emailed. Never resubmits. */
+  function showPending(payload) {
+    trackOnce();
+    var first = (payload.name.split(/\s+/)[0] || '').slice(0, 40);
+    document.getElementById('pbFirst').textContent = first ? ', ' + first : '';
+    document.getElementById('pbEmailLine').textContent = 'Thanks, your details are in. Check your inbox at ' + payload.email +
+      ' for the email with your download link (and Promotions or spam). If nothing arrives in a few minutes, email sani@drinksbyneat.com.';
+    form.hidden = true;
+    var success = document.getElementById('pbSuccess');
+    success.hidden = false;
+    try { success.focus({ preventScroll: true }); } catch (err) {}
+    document.getElementById('pbCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('pbDownload').hidden = true;
+    document.getElementById('pbDownloadNote').textContent = '';
+  }
+
+  var tracked = false;
+  function trackOnce() {
+    if (tracked) return;
+    tracked = true;
     try { window.plausible(EVENT, { props: { src: src || 'direct' } }); } catch (err) {}
+  }
+
+  function showSuccess(payload, res) {
+    trackOnce();
 
     var first = (res.firstName || payload.name.split(/\s+/)[0] || '').slice(0, 40);
     document.getElementById('pbFirst').textContent = first ? ', ' + first : '';
+    if (emailLineEl && !document.getElementById('pbEmail')) emailLineEl.innerHTML = EMAIL_LINE_HTML;   // after a soft state
     document.getElementById('pbEmail').textContent = payload.email;
     if (res.emailed === false) {
       document.getElementById('pbEmailLine').textContent = 'We saved your details. Grab your download below. If no email arrives in a few minutes, email sani@drinksbyneat.com.';
@@ -263,7 +322,11 @@
 
     var btn = document.getElementById('pbDownload');
     var note = document.getElementById('pbDownloadNote');
-    var noteDefault = note.textContent;
+    btn.hidden = false;                      // a late answer after the "check your inbox" state
+    btn.setAttribute('aria-disabled', 'true');
+    btn.textContent = 'Preparing your PDF…';
+    var noteDefault = note.getAttribute('data-default') || '';
+    note.textContent = noteDefault;
     if (!res.token) { // honeypot/spam path or no token issued
       btn.hidden = true;
       note.textContent = 'Your copy is on its way by email.';
