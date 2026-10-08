@@ -6,7 +6,72 @@
      data-submit-label    submit button text              (default "Get the free PDF")
      data-filename        fallback download file name
      data-src-key         sessionStorage key for ?src=    (default "pb_src")
-   Optional fields (city, phone, brand) are only validated/sent when the form has them. */
+   Optional fields (city, phone, brand) are only validated/sent when the form has them.
+   window.DBNBook.loadPdf(endpoint, token, book) is shared with the /…/download/ pages (email links). */
+(function () {
+  'use strict';
+  /* ---------------------------------------------------------------- download
+     Why this is more careful than a single fetch: Apps Script answers every request with a 302 to a
+     one-time script.googleusercontent.com/macros/echo URL. A ~0.8–1.5 MB base64 JSON body coming
+     back through that hop is what failed in headless Chromium (echo -> 302 -> exec -> 302 -> echo 404),
+     while small JSON replies through the same hop work. So we:
+       1. ask for the PDF in chunks (&part=0,1,…; a backend that predates chunking ignores `part`
+          and returns the whole file, which still works),
+       2. never send cookies (credentials:'omit') and never reuse a cached echo response (cache:'no-store'),
+       3. treat anything that isn't JSON (HTML 404 page, network error) as retryable, with backoff,
+          but never retry a real answer like {"error":"expired"}. */
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  function getJSON(url) {
+    return fetch(url, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'follow' })
+      .then(function (r) {
+        if (!r.ok) { var e = new Error('http_' + r.status); e.retry = true; throw e; }
+        return r.text();
+      })
+      .then(function (t) {
+        try { return JSON.parse(t); } catch (err) { var e = new Error('not_json'); e.retry = true; throw e; }
+      }, function (err) { if (err && err.retry === undefined) err.retry = true; throw err; });
+  }
+  function withRetry(fn, delays) {
+    return fn().catch(function (err) {
+      if (!err || !err.retry || !delays.length) throw err;
+      return sleep(delays[0]).then(function () { return withRetry(fn, delays.slice(1)); });
+    });
+  }
+  function loadPdf(endpoint, token, book) {
+    var base = endpoint + (endpoint.indexOf('?') > -1 ? '&' : '?') + 'action=pdf&t=' + encodeURIComponent(token) +
+      (book ? '&book=' + encodeURIComponent(book) : '');
+    var attempt = 0;
+    var part = function (n) {
+      return withRetry(function () { attempt++; return getJSON(base + '&part=' + n + '&r=' + attempt); }, [1200, 2500])
+        .then(function (d) {
+          if (!d || !d.ok) { var e = new Error((d && d.error) || 'bad_response'); e.retry = false; throw e; }
+          if (d.parts && d.part !== n) throw new Error('bad_part');
+          return d;
+        });
+    };
+    return part(0).then(function (first) {
+      var total = first.parts || 1;          // no `parts` = backend sent the whole file
+      var chunks = [first.data];
+      var seq = Promise.resolve();
+      for (var i = 1; i < total; i++) {
+        (function (n) { seq = seq.then(function () { return part(n); }).then(function (d) { chunks[n] = d.data; }); })(i);
+      }
+      return seq.then(function () {
+        var arrays = chunks.map(function (b64) {
+          var bin = atob(b64);
+          var bytes = new Uint8Array(bin.length);
+          for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+          return bytes;
+        });
+        if (first.bytes && arrays.reduce(function (s, a) { return s + a.length; }, 0) !== first.bytes) throw new Error('size_mismatch');
+        return { filename: first.filename, blob: new Blob(arrays, { type: 'application/pdf' }) };
+      });
+    });
+  }
+
+  window.DBNBook = { loadPdf: loadPdf };
+})();
+
 (function () {
   'use strict';
   var form = document.getElementById('pbForm');
@@ -187,7 +252,7 @@
     document.getElementById('pbFirst').textContent = first ? ', ' + first : '';
     document.getElementById('pbEmail').textContent = payload.email;
     if (res.emailed === false) {
-      document.getElementById('pbEmailLine').textContent = 'Grab your download below. Our email service is busy right now, so Andreas will send your copy to ' + payload.email + ' by hand.';
+      document.getElementById('pbEmailLine').textContent = 'We saved your details. Grab your download below. If no email arrives in a few minutes, email sani@drinksbyneat.com.';
     }
     form.hidden = true;
     var success = document.getElementById('pbSuccess');
@@ -203,7 +268,7 @@
       return;
     }
     // Fetch the PDF now (token expires in 30 min) so the button click is an instant, same-gesture download.
-    loadPdf(res.token)
+    window.DBNBook.loadPdf(ENDPOINT, res.token, BOOK)
       .then(function (d) {
         btn.href = URL.createObjectURL(d.blob);
         btn.setAttribute('download', d.filename || FILENAME);
@@ -213,8 +278,10 @@
       .catch(function () {
         btn.hidden = true;
         note.textContent = res.emailed === false
-          ? 'The instant download didn’t load. Andreas will email your copy to you by hand.'
-          : 'Got it. Your copy is on its way to your inbox. If it hasn’t arrived in five minutes, email sani@drinksbyneat.com.';
+          ? 'We saved your details. If no email arrives in a few minutes, email sani@drinksbyneat.com.'
+          : res.linkEmailed
+            ? 'The instant download didn’t load. Your download link is in your inbox too. Check Promotions or spam if it hides.'
+            : 'Got it. Your copy is on its way to your inbox. If it hasn’t arrived in five minutes, email sani@drinksbyneat.com.';
       });
   }
 })();

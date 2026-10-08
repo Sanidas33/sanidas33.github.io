@@ -183,3 +183,14 @@
 .pb-card [hidden], .pb-welcome[hidden] { display: none !important; }
 #get-the-book, #pbCard { scroll-margin-top: 5rem; }
 .section-head p.eyebrow, .page-hero p.eyebrow { font-size: 0.75rem; color: var(--accent-deep); letter-spacing: 0.16em; }
+
+/* --- Download page (/…/download/, the link in the book email) --- */
+.pb-dl { max-width: 40rem; }
+.pb-dl h1 { font-size: var(--text-2xl); margin-bottom: 1rem; }
+.pb-dl__status { color: var(--ink-soft); margin-bottom: 1.25rem; }
+.pb-dl .pb-download + .pb-download { margin-top: 0; }
+.pb-dl__help { border-top: 1px solid var(--rule); padding-top: 1.25rem; margin-top: 1.5rem; }
+.pb-dl [hidden] { display: none !important; }
+.pb-dl-page main { min-height: calc(100vh - 11rem); }
+.pb-dl-page .site-footer__inner { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.pb-dl-page .site-footer__bottom { margin-top: 0; padding-top: 0; border-top: 0; }
