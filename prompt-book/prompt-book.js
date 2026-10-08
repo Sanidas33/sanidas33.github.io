@@ -71,8 +71,9 @@
   form.addEventListener('input', function (e) { if (e.target.name && fieldWrap(e.target) && fieldWrap(e.target).classList.contains('is-invalid')) validate(); });
   form.addEventListener('change', function (e) { if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') { if (fieldWrap(e.target) && fieldWrap(e.target).classList.contains('is-invalid')) validate(); } });
 
-  function fail(msg) {
+  function fail(msg, info) {
     statusEl.textContent = msg;
+    statusEl.classList.toggle('is-info', !!info);
     submitBtn.disabled = false;
     submitBtn.textContent = SUBMIT_LABEL;
   }
@@ -82,7 +83,7 @@
     statusEl.textContent = '';
     var bad = validate();
     if (bad) { bad.focus(); return; }
-    if (!ENDPOINT) { fail('Downloads open shortly. In the meantime, email sani@drinksbyneat.com and Andreas will send the book.'); return; }
+    if (!ENDPOINT) { fail('The download isn’t open yet. Email sani@drinksbyneat.com and Andreas will send you the book.', true); return; }
 
     var val = function (n) { return has(n) ? form.elements[n].value.trim() : ''; };
     var payload = {
@@ -213,7 +214,7 @@
         btn.hidden = true;
         note.textContent = res.emailed === false
           ? 'The instant download didn’t load. Andreas will email your copy to you by hand.'
-          : 'The instant download didn’t load — your copy is attached to the email we just sent.';
+          : 'Got it. Your copy is on its way to your inbox. If it hasn’t arrived in five minutes, email sani@drinksbyneat.com.';
       });
   }
 })();
