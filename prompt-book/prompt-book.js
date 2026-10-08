@@ -11,25 +11,39 @@
 (function () {
   'use strict';
   /* ---------------------------------------------------------------- download
-     Why this is more careful than a single fetch: Apps Script answers every request with a 302 to a
-     one-time script.googleusercontent.com/macros/echo URL. A ~0.8–1.5 MB base64 JSON body coming
-     back through that hop is what failed in headless Chromium (echo -> 302 -> exec -> 302 -> echo 404),
-     while small JSON replies through the same hop work. So we:
-       1. ask for the PDF in chunks (&part=0,1,…; a backend that predates chunking ignores `part`
-          and returns the whole file, which still works),
+     Apps Script answers every request with a 302 to a one-time script.googleusercontent.com/macros/echo
+     URL, and each PDF request has to read the file from Drive, which is sometimes slow (we have seen a
+     request take 11 s and end on an echo 404, and others not answer for 30 s+). So we:
+       1. ask for the PDF in 192 KB chunks (&part=0,1,…), part 0 first, then up to 3 chunks at a time
+          (a backend that predates chunking ignores `part` and returns the whole file, which still works),
        2. never send cookies (credentials:'omit') and never reuse a cached echo response (cache:'no-store'),
-       3. treat anything that isn't JSON (HTML 404 page, network error) as retryable, with backoff,
-          but never retry a real answer like {"error":"expired"}. */
+       3. give every request a hard timeout (20 s) and treat timeouts, HTML/404 pages and network errors as
+          retryable (2 retries with backoff), but never retry a real answer like {"error":"expired"},
+       4. stop the whole thing after 2 minutes, so a page can never sit on "Preparing" forever. */
+  var REQUEST_TIMEOUT_MS = 20000;
+  var TOTAL_TIMEOUT_MS = 120000;
+  var PARALLEL = 3;
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  function retryable(msg) { var e = new Error(msg); e.retry = true; return e; }
   function getJSON(url) {
-    return fetch(url, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'follow' })
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer;
+    var timeout = new Promise(function (_, reject) {
+      timer = setTimeout(function () { if (ctl) ctl.abort(); reject(retryable('timeout')); }, REQUEST_TIMEOUT_MS);
+    });
+    var opts = { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'follow' };
+    if (ctl) opts.signal = ctl.signal;
+    var req = fetch(url, opts)
       .then(function (r) {
-        if (!r.ok) { var e = new Error('http_' + r.status); e.retry = true; throw e; }
+        if (!r.ok) throw retryable('http_' + r.status);
         return r.text();
       })
       .then(function (t) {
-        try { return JSON.parse(t); } catch (err) { var e = new Error('not_json'); e.retry = true; throw e; }
+        try { return JSON.parse(t); } catch (err) { throw retryable('not_json'); }
       }, function (err) { if (err && err.retry === undefined) err.retry = true; throw err; });
+    return Promise.race([req, timeout]).then(
+      function (v) { clearTimeout(timer); return v; },
+      function (err) { clearTimeout(timer); throw err; });
   }
   function withRetry(fn, delays) {
     return fn().catch(function (err) {
@@ -37,10 +51,12 @@
       return sleep(delays[0]).then(function () { return withRetry(fn, delays.slice(1)); });
     });
   }
-  function loadPdf(endpoint, token, book) {
+  /** loadPdf(endpoint, token, book, onProgress(done, total)) -> Promise<{ filename, blob }> */
+  function loadPdf(endpoint, token, book, onProgress) {
     var base = endpoint + (endpoint.indexOf('?') > -1 ? '&' : '?') + 'action=pdf&t=' + encodeURIComponent(token) +
       (book ? '&book=' + encodeURIComponent(book) : '');
     var attempt = 0;
+    var progress = function (done, total) { try { if (onProgress) onProgress(done, total); } catch (err) {} };
     var part = function (n) {
       return withRetry(function () { attempt++; return getJSON(base + '&part=' + n + '&r=' + attempt); }, [1200, 2500])
         .then(function (d) {
@@ -49,14 +65,20 @@
           return d;
         });
     };
-    return part(0).then(function (first) {
+    var work = part(0).then(function (first) {
       var total = first.parts || 1;          // no `parts` = backend sent the whole file
       var chunks = [first.data];
-      var seq = Promise.resolve();
-      for (var i = 1; i < total; i++) {
-        (function (n) { seq = seq.then(function () { return part(n); }).then(function (d) { chunks[n] = d.data; }); })(i);
+      var done = 1;
+      progress(done, total);
+      var next = 1;
+      function worker() {
+        if (next >= total) return Promise.resolve();
+        var n = next++;
+        return part(n).then(function (d) { chunks[n] = d.data; done++; progress(done, total); return worker(); });
       }
-      return seq.then(function () {
+      var pool = [];
+      for (var w = 0; w < Math.min(PARALLEL, total - 1); w++) pool.push(worker());
+      return Promise.all(pool).then(function () {
         var arrays = chunks.map(function (b64) {
           var bin = atob(b64);
           var bytes = new Uint8Array(bin.length);
@@ -67,9 +89,46 @@
         return { filename: first.filename, blob: new Blob(arrays, { type: 'application/pdf' }) };
       });
     });
+    var overall;
+    var guard = new Promise(function (_, reject) { overall = setTimeout(function () { reject(new Error('timeout')); }, TOTAL_TIMEOUT_MS); });
+    return Promise.race([work, guard]).then(
+      function (v) { clearTimeout(overall); return v; },
+      function (err) { clearTimeout(overall); throw err; });
   }
 
-  window.DBNBook = { loadPdf: loadPdf };
+  /* iPhone/iPad (every iOS browser and in-app browser is WebKit). There, a scripted click on a blob
+     download is unreliable, so we never auto-download: the visitor taps a button, and we open the PDF in
+     Safari's viewer (Share > Save to Files), with the share sheet as a second option. */
+  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  /** Turns an <a> into the right "save" button for this device. Returns the label it set. */
+  function armButton(a, blob, filename) {
+    var url = URL.createObjectURL(blob);
+    a.href = url;
+    a.removeAttribute('aria-disabled');
+    a.hidden = false;
+    if (IOS) {
+      a.removeAttribute('download');
+      a.setAttribute('target', '_blank');   // no rel=noopener: the new tab must be able to read our blob: URL
+      a.textContent = 'Open the PDF';
+    } else {
+      a.setAttribute('download', filename);
+      a.removeAttribute('target');
+      a.textContent = 'Download the PDF';
+    }
+    return a.textContent;
+  }
+
+  /** Native share sheet with the file (iOS: "Save to Files"), when the browser supports it. */
+  function canShareFile(blob, filename) {
+    try {
+      var f = new File([blob], filename, { type: 'application/pdf' });
+      return !!(navigator.canShare && navigator.share && navigator.canShare({ files: [f] })) ? f : null;
+    } catch (err) { return null; }
+  }
+
+  window.DBNBook = { loadPdf: loadPdf, armButton: armButton, canShareFile: canShareFile, isIOS: IOS };
 })();
 
 (function () {
@@ -187,64 +246,6 @@
       .catch(function () { fail('Couldn’t reach the server. Check your connection and try again.'); });
   });
 
-  /* ---------------------------------------------------------------- download
-     Why this is more careful than a single fetch: Apps Script answers every request with a 302 to a
-     one-time script.googleusercontent.com/macros/echo URL. A ~0.8–1.5 MB base64 JSON body coming
-     back through that hop is what failed in headless Chromium (echo -> 302 -> exec -> 302 -> echo 404),
-     while small JSON replies through the same hop work. So we:
-       1. ask for the PDF in chunks (&part=0,1,…; a backend that predates chunking ignores `part`
-          and returns the whole file, which still works),
-       2. never send cookies (credentials:'omit') and never reuse a cached echo response (cache:'no-store'),
-       3. treat anything that isn't JSON (HTML 404 page, network error) as retryable, with backoff,
-          but never retry a real answer like {"error":"expired"}. */
-  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-  function getJSON(url) {
-    return fetch(url, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'follow' })
-      .then(function (r) {
-        if (!r.ok) { var e = new Error('http_' + r.status); e.retry = true; throw e; }
-        return r.text();
-      })
-      .then(function (t) {
-        try { return JSON.parse(t); } catch (err) { var e = new Error('not_json'); e.retry = true; throw e; }
-      }, function (err) { if (err && err.retry === undefined) err.retry = true; throw err; });
-  }
-  function withRetry(fn, delays) {
-    return fn().catch(function (err) {
-      if (!err || !err.retry || !delays.length) throw err;
-      return sleep(delays[0]).then(function () { return withRetry(fn, delays.slice(1)); });
-    });
-  }
-  function loadPdf(token) {
-    var base = ENDPOINT + (ENDPOINT.indexOf('?') > -1 ? '&' : '?') + 'action=pdf&t=' + encodeURIComponent(token);
-    var attempt = 0;
-    var part = function (n) {
-      return withRetry(function () { attempt++; return getJSON(base + '&part=' + n + '&r=' + attempt); }, [1200, 2500])
-        .then(function (d) {
-          if (!d || !d.ok) { var e = new Error((d && d.error) || 'bad_response'); e.retry = false; throw e; }
-          if (d.parts && d.part !== n) throw new Error('bad_part');
-          return d;
-        });
-    };
-    return part(0).then(function (first) {
-      var total = first.parts || 1;          // no `parts` = backend sent the whole file
-      var chunks = [first.data];
-      var seq = Promise.resolve();
-      for (var i = 1; i < total; i++) {
-        (function (n) { seq = seq.then(function () { return part(n); }).then(function (d) { chunks[n] = d.data; }); })(i);
-      }
-      return seq.then(function () {
-        var arrays = chunks.map(function (b64) {
-          var bin = atob(b64);
-          var bytes = new Uint8Array(bin.length);
-          for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-          return bytes;
-        });
-        if (first.bytes && arrays.reduce(function (s, a) { return s + a.length; }, 0) !== first.bytes) throw new Error('size_mismatch');
-        return { filename: first.filename, blob: new Blob(arrays, { type: 'application/pdf' }) };
-      });
-    });
-  }
-
   function showSuccess(payload, res) {
     try { window.plausible(EVENT, { props: { src: src || 'direct' } }); } catch (err) {}
 
@@ -262,18 +263,19 @@
 
     var btn = document.getElementById('pbDownload');
     var note = document.getElementById('pbDownloadNote');
+    var noteDefault = note.textContent;
     if (!res.token) { // honeypot/spam path or no token issued
       btn.hidden = true;
       note.textContent = 'Your copy is on its way by email.';
       return;
     }
-    // Fetch the PDF now (token expires in 30 min) so the button click is an instant, same-gesture download.
-    window.DBNBook.loadPdf(ENDPOINT, res.token, BOOK)
+    // Fetch the PDF now so the button tap is an instant, same-gesture download (or "Open the PDF" on iPhone).
+    window.DBNBook.loadPdf(ENDPOINT, res.token, BOOK, function (done, total) {
+      if (total > 1 && done < total) btn.textContent = 'Preparing your PDF… ' + done + ' of ' + total;
+    })
       .then(function (d) {
-        btn.href = URL.createObjectURL(d.blob);
-        btn.setAttribute('download', d.filename || FILENAME);
-        btn.removeAttribute('aria-disabled');
-        btn.textContent = 'Download the PDF';
+        window.DBNBook.armButton(btn, d.blob, d.filename || FILENAME);
+        note.textContent = window.DBNBook.isIOS ? noteDefault + ' · opens in a new tab, then Share > Save to Files' : noteDefault;
       })
       .catch(function () {
         btn.hidden = true;
