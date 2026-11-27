@@ -33,10 +33,13 @@
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "ProfessionalService",
+      "@type": [
+        "ProfessionalService",
+        "LocalBusiness"
+      ],
       "@id": "https://drinksbyneat.com/#org",
       "name": "Drinks By Neat",
-      "url": "https://drinksbyneat.com/prep-lab/",
+      "url": "https://drinksbyneat.com/",
       "email": "sani@drinksbyneat.com",
       "description": "Prep-lab design and build for hotels and multi-unit restaurant groups: equipment specification, architect-ready layout, HACCP batching SOPs, and team training.",
       "founder": {
@@ -45,15 +48,22 @@
         "name": "Andreas Sanidiotis",
         "jobTitle": "Beverage Consultant"
       },
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "New York",
-        "addressRegion": "NY",
-        "addressCountry": "US"
+      "areaServed": {
+        "@type": "City",
+        "name": "New York City"
       },
-      "areaServed": ["New York City", "United States", "United Arab Emirates", "Europe"],
-      "knowsAbout": ["prep-lab design", "bar commissary", "batching SOPs", "HACCP cocktail production", "hotel beverage programs"],
-      "sameAs": ["https://www.instagram.com/drinksbyneat/", "https://www.linkedin.com/in/andreas-sanidiotis/", "https://x.com/sanidiotis"]
+      "knowsAbout": [
+        "prep-lab design",
+        "bar commissary",
+        "batching SOPs",
+        "HACCP cocktail production",
+        "hotel beverage programs"
+      ],
+      "sameAs": [
+        "https://www.instagram.com/drinksbyneat/",
+        "https://www.linkedin.com/in/andreas-sanidiotis/",
+        "https://x.com/sanidiotis"
+      ]
     },
     {
       "@type": "FAQPage",
@@ -87,7 +97,7 @@
           "name": "What does the prep-lab engagement include — and exclude?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Site walkthrough, current-state assessment, equipment spec, architect-ready layout with electrical and plumbing requirements, batching SOPs, HACCP-compliant production protocols, two-day on-site team training, and 30-day post-launch troubleshooting. Not included: equipment purchase, general contracting, and permitting. We work alongside your GC."
+            "text": "Site walkthrough, current-state assessment, equipment spec, architect-ready layout with electrical and plumbing requirements, batching SOPs, HACCP-compliant production protocols, two-day on-site team training, and 30-day post-launch troubleshooting. Not included: equipment purchase, general contracting, and permitting. We work alongside your GC. The itemized list is on Services."
           }
         },
         {
@@ -103,8 +113,18 @@
     {
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://drinksbyneat.com/" },
-        { "@type": "ListItem", "position": 2, "name": "Prep-Lab Design & Build", "item": "https://drinksbyneat.com/prep-lab/" }
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://drinksbyneat.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Prep-Lab Design & Build",
+          "item": "https://drinksbyneat.com/prep-lab/"
+        }
       ]
     }
   ]
@@ -155,7 +175,7 @@
       <div class="section-head">
         <p class="eyebrow">The hire</p>
         <h2>A lab is not a rotovap. It is a <em>production line.</em></h2>
-        <p>Most groups buy a piece of kit and park it next to the ice well. That is not a prep lab. A lab is the room, the load calculation, the SOPs, and the people who can run a batch without inventing food safety at 1 a.m. The public record behind this practice is a World&rsquo;s 50 Best #25 program and rooms that held volume — the lab work is how that standard scales past one stick.</p>
+        <p>Most groups buy a piece of kit and park it next to the ice well. That is not a prep lab. A lab is the room, the load calculation, the SOPs, and the people who can run a batch without inventing food safety at 1 a.m. The public record behind this practice is a World&rsquo;s 50 Best #25 program and rooms that held volume — the lab work is how that standard scales past one stick. If you are still deciding what the corner of the kitchen should hold, start with the operator guide: <a class="text-link" href="/blog/how-to-set-up-a-cocktail-prep-lab/">how to set up a cocktail prep lab</a>.</p>
       </div>
       <div class="outcomes">
         <article class="outcome"><h3>Spec against throughput</h3><p>Rotovap, centrifuge, sous-vide, ultrasonic, Spinzall, vacuum sealer, walk-in batching, glycol chiller — only if the minutes and the menu pay for them. The itemized engagement is on <a class="text-link" href="/services/#prep-lab">Services</a>.</p></article>
@@ -224,7 +244,7 @@
       <div class="site-footer__top">
         <div class="site-footer__brand">
           <h2>Drinks By <em class="brand-em">Neat</em></h2>
-          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
+          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. Serving New York City.</p>
         </div>
         <div>
           <h3>Site</h3>
