@@ -38,19 +38,29 @@
       "name": "Notes — Operators & Technique | Drinks By Neat",
       "url": "https://drinksbyneat.com/notes/",
       "description": "Notes in two tracks: Operators (cost, openings, labor, menus) and Technique (recipes, methods, equipment). Written from the floor, precise enough to replicate.",
-      "isPartOf": { "@type": "WebSite", "name": "Drinks By Neat", "url": "https://drinksbyneat.com/" },
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Drinks By Neat",
+        "url": "https://drinksbyneat.com/"
+      },
       "about": {
-        "@type": "ProfessionalService",
+        "@type": [
+          "ProfessionalService",
+          "LocalBusiness"
+        ],
         "@id": "https://drinksbyneat.com/#org",
         "name": "Drinks By Neat",
         "url": "https://drinksbyneat.com/",
         "email": "sani@drinksbyneat.com",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "New York",
-          "addressRegion": "NY",
-          "addressCountry": "US"
-        }
+        "areaServed": {
+          "@type": "City",
+          "name": "New York City"
+        },
+        "sameAs": [
+          "https://www.instagram.com/drinksbyneat/",
+          "https://www.linkedin.com/in/andreas-sanidiotis/",
+          "https://x.com/sanidiotis"
+        ]
       }
     },
     {
@@ -109,6 +119,15 @@
           <h2>Operators</h2>
           <p class="lede-s">For GMs, beverage directors, and anyone who signs the invoices.</p>
           <ul class="notes-index">
+            <li data-track="operators">
+              <a href="/blog/how-to-set-up-a-cocktail-prep-lab/">
+                <time datetime="2026-11">Nov 2026</time>
+                <div>
+                  <strong>How to Set Up a Cocktail Prep Lab</strong>
+                  <span>Equipment checklist, batching workflow, labels, storage, and safety.</span>
+                </div>
+              </a>
+            </li>
             <li data-track="operators">
               <a href="/blog/all-day-bar/">
                 <time datetime="2026-08">Aug 2026</time>
@@ -485,7 +504,7 @@
       <div class="site-footer__top">
         <div class="site-footer__brand">
           <h2>Drinks By <em class="brand-em">Neat</em></h2>
-          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
+          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. Serving New York City.</p>
         </div>
         <div>
           <h3>Site</h3>

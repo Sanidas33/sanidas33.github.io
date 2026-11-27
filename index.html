@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bar &amp; Beverage Consultant NYC — Drinks By Neat | Andreas Sanidiotis</title>
-  <meta name="description" content="NYC bar and beverage consultant for hotels, restaurants, and bars. World's 50 Best #25, two-time Tales nominee. Programs that earn their keep — plus Neat AI." />
+  <title>Drinks By Neat — Beverage Programs &amp; Neat AI</title>
+  <meta name="description" content="Drinks By Neat builds beverage programs and the systems that run them, from New York. World's 50 Best #25 bar team. Two-time Tales nominee." />
 
-  <meta property="og:title" content="Bar &amp; Beverage Consultant NYC — Drinks By Neat | Andreas Sanidiotis" />
-  <meta property="og:description" content="NYC bar and beverage consultant for hotels, restaurants, and bars. World's 50 Best #25, two-time Tales nominee. Programs that earn their keep — plus Neat AI." />
+  <meta property="og:title" content="Drinks By Neat — Beverage Programs &amp; Neat AI" />
+  <meta property="og:description" content="Drinks By Neat builds beverage programs and the systems that run them, from New York. World's 50 Best #25 bar team. Two-time Tales nominee." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://drinksbyneat.com/" />
   <meta property="og:image" content="https://drinksbyneat.com/assets/images/og-image.jpg" />
@@ -16,8 +16,8 @@
   <meta property="og:site_name" content="Drinks By Neat" />
   <meta property="og:locale" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Bar &amp; Beverage Consultant NYC — Drinks By Neat | Andreas Sanidiotis" />
-  <meta name="twitter:description" content="NYC bar and beverage consultant for hotels, restaurants, and bars. World's 50 Best #25, two-time Tales nominee. Programs that earn their keep — plus Neat AI." />
+  <meta name="twitter:title" content="Drinks By Neat — Beverage Programs &amp; Neat AI" />
+  <meta name="twitter:description" content="Drinks By Neat builds beverage programs and the systems that run them, from New York. World's 50 Best #25 bar team. Two-time Tales nominee." />
   <meta name="twitter:image" content="https://drinksbyneat.com/assets/images/og-image.jpg" />
 
   <link rel="preload" href="/assets/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -36,34 +36,81 @@
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "ProfessionalService",
+      "@type": [
+        "ProfessionalService",
+        "LocalBusiness"
+      ],
       "@id": "https://drinksbyneat.com/#org",
       "name": "Drinks By Neat",
       "url": "https://drinksbyneat.com/",
       "email": "sani@drinksbyneat.com",
       "description": "Beverage consultancy for hotels, restaurants, and bars. Opening bar programs, program refreshes, prep-lab design, white-label & RTD development, team training, and Neat AI guest and staff systems.",
-      "founder": { "@id": "https://drinksbyneat.com/#andreas" },
-      "address": { "@type": "PostalAddress", "addressLocality": "New York", "addressRegion": "NY", "addressCountry": "US" },
-      "areaServed": ["New York City", "United States", "United Arab Emirates", "Europe"],
-      "knowsAbout": ["cocktail program development", "bar consulting", "hotel beverage programs", "prep-lab design", "RTD cocktail development", "bartender training", "brand ambassadorship", "trade education", "signature serve development", "hospitality guest communication", "hotel operations systems"],
-      "sameAs": ["https://www.instagram.com/drinksbyneat/", "https://www.linkedin.com/in/andreas-sanidiotis/", "https://x.com/sanidiotis"]
+      "founder": {
+        "@id": "https://drinksbyneat.com/#andreas"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "New York City"
+      },
+      "knowsAbout": [
+        "cocktail program development",
+        "bar consulting",
+        "hotel beverage programs",
+        "prep-lab design",
+        "RTD cocktail development",
+        "bartender training",
+        "brand ambassadorship",
+        "trade education",
+        "signature serve development",
+        "hospitality guest communication",
+        "hotel operations systems"
+      ],
+      "sameAs": [
+        "https://www.instagram.com/drinksbyneat/",
+        "https://www.linkedin.com/in/andreas-sanidiotis/",
+        "https://x.com/sanidiotis"
+      ]
     },
     {
       "@type": "Person",
       "@id": "https://drinksbyneat.com/#andreas",
       "name": "Andreas Sanidiotis",
       "jobTitle": "Beverage Consultant",
-      "worksFor": { "@id": "https://drinksbyneat.com/#org" },
-      "address": { "@type": "PostalAddress", "addressLocality": "New York", "addressRegion": "NY", "addressCountry": "US" },
+      "worksFor": {
+        "@id": "https://drinksbyneat.com/#org",
+        "@type": [
+          "ProfessionalService",
+          "LocalBusiness"
+        ],
+        "name": "Drinks By Neat",
+        "url": "https://drinksbyneat.com/",
+        "email": "sani@drinksbyneat.com",
+        "areaServed": {
+          "@type": "City",
+          "name": "New York City"
+        },
+        "sameAs": [
+          "https://www.instagram.com/drinksbyneat/",
+          "https://www.linkedin.com/in/andreas-sanidiotis/",
+          "https://x.com/sanidiotis"
+        ]
+      },
       "email": "sani@drinksbyneat.com",
-      "knowsLanguage": ["en", "el"],
+      "knowsLanguage": [
+        "en",
+        "el"
+      ],
       "award": [
         "World's 50 Best Bars #25 (Lost & Found Drinkery, 2018)",
         "Tales of the Cocktail Spirited Awards Top 10 nominee, Best International Cocktail Bar (2018)",
         "Tales of the Cocktail Spirited Awards Top 10 nominee, Best International Bar Team (2018)",
         "Spirited Awards U.S. Regional Top 10 Honoree, Best New U.S. Cocktail Bar — In Plain Sight, Austin (2023)"
       ],
-      "sameAs": ["https://www.instagram.com/drinksbyneat/", "https://www.linkedin.com/in/andreas-sanidiotis/", "https://x.com/sanidiotis"]
+      "sameAs": [
+        "https://www.instagram.com/drinksbyneat/",
+        "https://www.linkedin.com/in/andreas-sanidiotis/",
+        "https://x.com/sanidiotis"
+      ]
     },
     {
       "@type": "FAQPage",
@@ -493,7 +540,7 @@
       <div class="site-footer__top">
         <div class="site-footer__brand">
           <h2>Drinks By <em class="brand-em">Neat</em></h2>
-          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. New York — on-site anywhere.</p>
+          <p>Beverage consultancy and Neat AI. Andreas Sanidiotis. Serving New York City.</p>
         </div>
         <div>
           <h3>Site</h3>
